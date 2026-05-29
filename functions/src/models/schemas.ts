@@ -43,7 +43,7 @@ export const AgentResponseSchema = z.object({
     actionId: z.string().optional(),
     title: z.string().optional(),
     message: z.string(),
-    choices: z.array(z.string()).min(2).max(4),
+    choices: z.array(z.string()).min(2).max(4).optional(),
     done: z.boolean(),
     createdItem: z.record(z.string(), z.unknown()).optional(),
 });

@@ -95,7 +95,6 @@ export const answerChatFlow = ai.defineFlow(
                 agent: AGENT,
                 title: conv.stuffText,
                 message: llmResponse.message,
-                choices: llmResponse.choices,
                 done: true,
                 createdItem: createdItem as unknown as Record<string, unknown>,
             };
