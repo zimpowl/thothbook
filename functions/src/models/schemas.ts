@@ -15,7 +15,7 @@ export const StartClarifyInputSchema = z.object({
 });
 
 export const AnswerClarifyInputSchema = z.object({
-    stuffId: z.string().min(1),
+    actionId: z.string().min(1),
     answer: z.string().min(1, "La réponse ne peut pas être vide"),
 });
 
@@ -52,7 +52,8 @@ export const AnubisLLMResponseSchema = z.object({
 
 export const AgentResponseSchema = z.object({
     agent: z.string(),
-    stuffId: z.string().optional(),
+    actionId: z.string().optional(),
+    title: z.string().optional(),
     message: z.string(),
     inputType: InputTypeSchema,
     choices: z.array(z.string()).optional(),

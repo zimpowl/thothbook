@@ -103,7 +103,8 @@ export const startChatFlow = ai.defineFlow(
 
         return {
             agent: AGENT,
-            stuffId: stuff.id,
+            actionId: stuff.id,
+            title: stuff.text,
             message: llmResponse.message,
             inputType: llmResponse.inputType,
             choices: llmResponse.choices,

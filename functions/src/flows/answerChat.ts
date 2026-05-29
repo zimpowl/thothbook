@@ -33,12 +33,12 @@ export const answerChatFlow = ai.defineFlow(
         outputSchema: AgentResponseSchema,
     },
     async (input) => {
-        const conv = await getConversation(input.stuffId, AGENT);
+        const conv = await getConversation(input.actionId, AGENT);
         if (!conv) {
-            throw new Error(`Aucune conversation trouvée pour ${input.stuffId}`);
+            throw new Error(`Aucune conversation trouvée pour ${input.actionId}`);
         }
         if (conv.status === "COMPLETED") {
-            throw new Error(`La clarification pour ${input.stuffId} est déjà terminée`);
+            throw new Error(`La clarification pour ${input.actionId} est déjà terminée`);
         }
 
         // Sauvegarder la réponse de l'utilisateur
@@ -47,7 +47,7 @@ export const answerChatFlow = ai.defineFlow(
             text: input.answer,
             timestamp: new Date().toISOString(),
         };
-        await addMessage(input.stuffId, AGENT, userMessage);
+        await addMessage(input.actionId, AGENT, userMessage);
 
         // Construire l'historique complet (incluant la nouvelle réponse)
         const fullMessages = [...conv.messages, userMessage];
@@ -76,7 +76,7 @@ export const answerChatFlow = ai.defineFlow(
             fieldKey: llmResponse.fieldKey,
             timestamp: new Date().toISOString(),
         };
-        await addMessage(input.stuffId, AGENT, agentMessage);
+        await addMessage(input.actionId, AGENT, agentMessage);
 
         // Si Anubis a terminé, créer l'item et finaliser
         if (llmResponse.done && llmResponse.itemType && llmResponse.item) {
@@ -84,17 +84,18 @@ export const answerChatFlow = ai.defineFlow(
 
             let createdItem;
             if (llmResponse.itemType === "TASK") {
-                createdItem = await createTaskItem(input.stuffId, conv.stuffText, itemData);
+                createdItem = await createTaskItem(input.actionId, conv.stuffText, itemData);
             } else {
-                createdItem = await createEventItem(input.stuffId, conv.stuffText, itemData);
+                createdItem = await createEventItem(input.actionId, conv.stuffText, itemData);
             }
 
             // Marquer le stuff comme DONE et la conversation comme COMPLETED
-            await markStuffDone(input.stuffId);
-            await completeConversation(input.stuffId, AGENT);
+            await markStuffDone(input.actionId);
+            await completeConversation(input.actionId, AGENT);
 
             return {
                 agent: AGENT,
+                title: conv.stuffText,
                 message: llmResponse.message,
                 inputType: llmResponse.inputType,
                 fieldKey: llmResponse.fieldKey,
@@ -105,6 +106,7 @@ export const answerChatFlow = ai.defineFlow(
 
         return {
             agent: AGENT,
+            title: conv.stuffText,
             message: llmResponse.message,
             inputType: llmResponse.inputType,
             choices: llmResponse.choices,

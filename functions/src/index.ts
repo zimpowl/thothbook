@@ -62,7 +62,7 @@ export const startChat = onRequest(
 
 /**
  * POST /answerChat
- * Body: { "stuffId": "abc123", "answer": "réponse de l'utilisateur" }
+ * Body: { "actionId": "abc123", "answer": "réponse de l'utilisateur" }
  * Response: AgentResponse (prochaine question ou item créé)
  */
 export const answerChat = onRequest(
