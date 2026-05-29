@@ -32,7 +32,7 @@ export const AnubisLLMResponseSchema = z.object({
         .describe("Toujours entre 2 et 4 choix. Si une saisie spécifique est nécessaire, ajouter le type d'input (DATE_PICKER, TIME_PICKER, TEXT_INPUT, NUMBER_INPUT) comme dernier choix"),
     done: z.boolean()
         .describe("true si Anubis a assez d'informations pour créer l'item"),
-    itemType: z.enum(["TASK", "EVENT"]).optional()
+    itemType: z.enum(["TASK", "EVENT", "LIST"]).optional()
         .describe("Le type d'item à créer (seulement si done=true)"),
     item: z.record(z.string(), z.unknown()).optional()
         .describe("Les données de l'item à créer (seulement si done=true)"),

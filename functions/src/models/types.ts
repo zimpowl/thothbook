@@ -2,11 +2,12 @@
 // 1. TYPES ET ENUMS DE BASE (FIRESTORE)
 // ==========================================
 
-export type ItemType = "STUFF" | "TASK" | "EVENT";
+export type ItemType = "STUFF" | "TASK" | "EVENT" | "LIST";
 export type ItemStatus = "TODO" | "WAIT" | "DONE" | "NOT_DONE";
 export type Priority = "LOW" | "MEDIUM" | "HIGH";
 export type EnergyLevel = "LOW" | "MEDIUM" | "HIGH";
-export type ItemContext = "WORK" | "PERSONAL" | "HEALTH" | "LEISURE";
+export type ItemContext = string;
+export type ItemList = string;
 export type TaskCategory = "ACTION" | "DELEGATE" | "ONE_DAY" | "REFERENCE";
 
 // ==========================================
@@ -60,6 +61,16 @@ export interface EventItem extends BaseItem {
 }
 
 /**
+ * Un élément de liste (livres à lire, courses, films à voir, etc.)
+ */
+export interface ListItem extends BaseItem {
+    type: "LIST";
+    sourceStuffId: string;
+    listName: ItemList;      // Nom de la liste (ex: "courses", "livres à lire")
+    context: ItemContext;
+}
+
+/**
  * Type d'union pour la collection "items"
  */
-export type Item = StuffItem | TaskItem | EventItem;
+export type Item = StuffItem | TaskItem | EventItem | ListItem;

@@ -1,12 +1,14 @@
 import {ai, DEFAULT_MODEL} from "../config/genkit.js";
 import {AgentResponseSchema, AnubisLLMResponseSchema} from "../models/schemas.js";
 import {ConversationMessage} from "../models/conversation.js";
-import {ANUBIS_SYSTEM_PROMPT} from "../prompts/anubis.js";
+import {buildAnubisSystemPrompt} from "../prompts/anubis.js";
 import {
     findTodoStuff,
     getConversation,
     createConversation,
     addMessage,
+    getUserContexts,
+    getUserListNames,
 } from "../services/firestore.js";
 import {routeStuff} from "./thoth.js";
 
@@ -83,6 +85,11 @@ export const startChatFlow = ai.defineFlow(
         }
 
         // Sinon, appeler le LLM
+        const [existingContexts, existingListNames] = await Promise.all([
+            getUserContexts(),
+            getUserListNames(),
+        ]);
+        const systemPrompt = buildAnubisSystemPrompt(existingContexts, existingListNames);
         const history = buildChatHistory(conv.messages);
 
         const userPrompt = conv.messages.length === 0
@@ -91,7 +98,7 @@ export const startChatFlow = ai.defineFlow(
 
         const result = await ai.generate({
             model: DEFAULT_MODEL,
-            system: ANUBIS_SYSTEM_PROMPT,
+            system: systemPrompt,
             messages: history,
             prompt: userPrompt,
             output: {schema: AnubisLLMResponseSchema},

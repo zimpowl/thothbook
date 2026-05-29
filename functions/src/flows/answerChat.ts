@@ -1,7 +1,7 @@
 import {ai, DEFAULT_MODEL} from "../config/genkit.js";
 import {AnswerClarifyInputSchema, AgentResponseSchema, AnubisLLMResponseSchema} from "../models/schemas.js";
 import {ConversationMessage} from "../models/conversation.js";
-import {ANUBIS_SYSTEM_PROMPT} from "../prompts/anubis.js";
+import {buildAnubisSystemPrompt} from "../prompts/anubis.js";
 import {
     getConversation,
     addMessage,
@@ -9,6 +9,9 @@ import {
     markStuffDone,
     createTaskItem,
     createEventItem,
+    createListItem,
+    getUserContexts,
+    getUserListNames,
 } from "../services/firestore.js";
 
 const AGENT = "ANUBIS";
@@ -53,10 +56,17 @@ export const answerChatFlow = ai.defineFlow(
         const fullMessages = [...conv.messages, userMessage];
         const history = buildChatHistory(fullMessages);
 
+        // Récupérer contextes et listes existants
+        const [existingContexts, existingListNames] = await Promise.all([
+            getUserContexts(),
+            getUserListNames(),
+        ]);
+        const systemPrompt = buildAnubisSystemPrompt(existingContexts, existingListNames);
+
         // Appeler le LLM avec tout l'historique
         const result = await ai.generate({
             model: DEFAULT_MODEL,
-            system: ANUBIS_SYSTEM_PROMPT,
+            system: systemPrompt,
             messages: history,
             prompt: `L'utilisateur a répondu : "${input.answer}". Continue la qualification.`,
             output: {schema: AnubisLLMResponseSchema},
@@ -83,6 +93,8 @@ export const answerChatFlow = ai.defineFlow(
             let createdItem;
             if (llmResponse.itemType === "TASK") {
                 createdItem = await createTaskItem(input.actionId, conv.stuffText, itemData);
+            } else if (llmResponse.itemType === "LIST") {
+                createdItem = await createListItem(input.actionId, conv.stuffText, itemData);
             } else {
                 createdItem = await createEventItem(input.actionId, conv.stuffText, itemData);
             }

@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import {StuffItem, TaskItem, EventItem, Item} from "../models/types.js";
+import {StuffItem, TaskItem, EventItem, ListItem, Item} from "../models/types.js";
 import {ConversationDoc, ConversationMessage} from "../models/conversation.js";
 
 const db = admin.firestore();
@@ -169,4 +169,56 @@ export async function completeConversation(
         status: "COMPLETED",
         updatedAt: new Date().toISOString(),
     });
+}
+
+// ==========================================
+// CONTEXTES & LISTES EXISTANTS
+// ==========================================
+
+export async function getUserContexts(): Promise<string[]> {
+    const snapshot = await itemsCol
+        .where("type", "in", ["TASK", "EVENT", "LIST"])
+        .select("context")
+        .get();
+    const contexts = new Set<string>();
+    snapshot.docs.forEach((doc) => {
+        const ctx = doc.data().context;
+        if (ctx) contexts.add(ctx);
+    });
+    return Array.from(contexts);
+}
+
+export async function getUserListNames(): Promise<string[]> {
+    const snapshot = await itemsCol
+        .where("type", "==", "LIST")
+        .select("listName")
+        .get();
+    const names = new Set<string>();
+    snapshot.docs.forEach((doc) => {
+        const name = doc.data().listName;
+        if (name) names.add(name);
+    });
+    return Array.from(names);
+}
+
+export async function createListItem(
+    stuffId: string,
+    stuffText: string,
+    data: Record<string, unknown>,
+): Promise<ListItem> {
+    const now = new Date().toISOString();
+    const ref = itemsCol.doc();
+    const listItem: ListItem = {
+        id: ref.id,
+        type: "LIST",
+        text: (data["text"] as string) || stuffText,
+        status: "TODO",
+        sourceStuffId: stuffId,
+        listName: (data["listName"] as string) || "divers",
+        context: (data["context"] as string) || "personnel",
+        createdAt: now,
+        updatedAt: now,
+    };
+    await ref.set(listItem);
+    return listItem;
 }
