@@ -39,6 +39,33 @@ export async function markStuffDone(stuffId: string): Promise<void> {
     });
 }
 
+export async function markStuffWait(stuffId: string): Promise<void> {
+    await itemsCol.doc(stuffId).update({
+        status: "WAIT",
+        updatedAt: new Date().toISOString(),
+    });
+}
+
+/**
+ * Trouve un stuff en WAIT dont toutes les tâches/événements liés sont DONE.
+ */
+export async function findStuffWaitingReview(): Promise<StuffItem | null> {
+    const snapshot = await itemsCol
+        .where("type", "==", "STUFF")
+        .where("status", "==", "WAIT")
+        .orderBy("createdAt", "asc")
+        .get();
+    for (const doc of snapshot.docs) {
+        const stuff = doc.data() as StuffItem;
+        const items = await getItemsByStuffId(stuff.id);
+        const actionItems = items.filter((i) => i.type === "TASK" || i.type === "EVENT");
+        if (actionItems.length > 0 && actionItems.every((i) => i.status === "DONE" || i.status === "NOT_DONE")) {
+            return stuff;
+        }
+    }
+    return null;
+}
+
 export async function createTaskItem(
     stuffId: string,
     stuffText: string,
@@ -199,6 +226,49 @@ export async function getUserListNames(): Promise<string[]> {
         if (name) names.add(name);
     });
     return Array.from(names);
+}
+
+// ==========================================
+// HORUS — TÂCHES & SESSIONS
+// ==========================================
+
+export async function findNextTodoTask(): Promise<TaskItem | null> {
+    const snapshot = await itemsCol
+        .where("type", "==", "TASK")
+        .where("status", "==", "TODO")
+        .orderBy("createdAt", "asc")
+        .limit(1)
+        .get();
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].data() as TaskItem;
+}
+
+export async function getItemsByStuffId(stuffId: string): Promise<Item[]> {
+    const snapshot = await itemsCol
+        .where("sourceStuffId", "==", stuffId)
+        .get();
+    return snapshot.docs.map((doc) => doc.data() as Item);
+}
+
+export async function isObjectiveComplete(stuffId: string): Promise<boolean> {
+    const items = await getItemsByStuffId(stuffId);
+    return items
+        .filter((i) => i.type === "TASK" || i.type === "EVENT")
+        .every((i) => i.status === "DONE");
+}
+
+export async function markTaskDone(taskId: string): Promise<void> {
+    await itemsCol.doc(taskId).update({
+        status: "DONE",
+        updatedAt: new Date().toISOString(),
+    });
+}
+
+export async function markTaskSkipped(taskId: string): Promise<void> {
+    await itemsCol.doc(taskId).update({
+        status: "NOT_DONE",
+        updatedAt: new Date().toISOString(),
+    });
 }
 
 export async function createListItem(

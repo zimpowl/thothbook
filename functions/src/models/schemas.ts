@@ -31,11 +31,31 @@ export const AnubisLLMResponseSchema = z.object({
     choices: z.array(z.string()).min(2).max(4)
         .describe("Toujours entre 2 et 4 choix. Si une saisie spécifique est nécessaire, ajouter le type d'input (DATE_PICKER, TIME_PICKER, TEXT_INPUT, NUMBER_INPUT) comme dernier choix"),
     done: z.boolean()
-        .describe("true si Anubis a assez d'informations pour créer l'item"),
+        .describe("true si Anubis a assez d'informations pour créer l'item ou si le stuff peut être clôturé (mode review)"),
+    closeStuff: z.boolean().optional()
+        .describe("true si l'objectif du stuff est atteint et qu'on peut le clôturer (mode review uniquement)"),
     itemType: z.enum(["TASK", "EVENT", "LIST"]).optional()
         .describe("Le type d'item à créer (seulement si done=true)"),
     item: z.record(z.string(), z.unknown()).optional()
         .describe("Les données de l'item à créer (seulement si done=true)"),
+});
+
+// --- Schéma de la réponse structurée attendue du LLM (Horus) ---
+
+export const HorusActionSchema = z.enum([
+    "NONE",
+    "START_TIMER",
+    "STOP_TIMER",
+    "COMPLETE_TASK",
+    "SKIP_TASK",
+]);
+
+export const HorusLLMResponseSchema = z.object({
+    message: z.string().describe("Le message d'Horus pour l'utilisateur"),
+    choices: z.array(z.string()).min(2).max(4)
+        .describe("Entre 2 et 4 choix. Peut inclure TEXT_INPUT si nécessaire"),
+    action: HorusActionSchema.optional()
+        .describe("L'action à exécuter (optionnel)"),
 });
 
 export const AgentResponseSchema = z.object({
@@ -43,7 +63,7 @@ export const AgentResponseSchema = z.object({
     actionId: z.string().optional(),
     title: z.string().optional(),
     message: z.string(),
-    choices: z.array(z.string()).min(2).max(4).optional(),
+    choices: z.array(z.string()).optional(),
     done: z.boolean(),
     createdItem: z.record(z.string(), z.unknown()).optional(),
 });
