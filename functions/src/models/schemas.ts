@@ -25,23 +25,11 @@ export const CaptureStuffOutputSchema = z.object({
     stuffId: z.string(),
 });
 
-export const InputTypeSchema = z.enum([
-    "text_input",
-    "number_input",
-    "date_picker",
-    "time_picker",
-    "single_choice",
-    "yes_no",
-]);
-
 // Schéma de la réponse structurée attendue du LLM (Anubis)
 export const AnubisLLMResponseSchema = z.object({
     message: z.string().describe("La question ou le message d'Anubis pour l'utilisateur"),
-    inputType: InputTypeSchema.describe("Le type de champ à afficher côté client"),
-    choices: z.array(z.string()).optional()
-        .describe("Les choix possibles (seulement pour single_choice)"),
-    fieldKey: z.string()
-        .describe("La clé du champ concerné (ex: context, priority, startDate)"),
+    choices: z.array(z.string()).min(2).max(4)
+        .describe("Toujours entre 2 et 4 choix. Si une saisie spécifique est nécessaire, ajouter le type d'input (DATE_PICKER, TIME_PICKER, TEXT_INPUT, NUMBER_INPUT) comme dernier choix"),
     done: z.boolean()
         .describe("true si Anubis a assez d'informations pour créer l'item"),
     itemType: z.enum(["TASK", "EVENT"]).optional()
@@ -55,9 +43,7 @@ export const AgentResponseSchema = z.object({
     actionId: z.string().optional(),
     title: z.string().optional(),
     message: z.string(),
-    inputType: InputTypeSchema,
-    choices: z.array(z.string()).optional(),
-    fieldKey: z.string(),
+    choices: z.array(z.string()).min(2).max(4),
     done: z.boolean(),
     createdItem: z.record(z.string(), z.unknown()).optional(),
 });

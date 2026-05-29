@@ -71,9 +71,7 @@ export const answerChatFlow = ai.defineFlow(
         const agentMessage: ConversationMessage = {
             role: "agent",
             text: llmResponse.message,
-            inputType: llmResponse.inputType,
             choices: llmResponse.choices,
-            fieldKey: llmResponse.fieldKey,
             timestamp: new Date().toISOString(),
         };
         await addMessage(input.actionId, AGENT, agentMessage);
@@ -97,8 +95,7 @@ export const answerChatFlow = ai.defineFlow(
                 agent: AGENT,
                 title: conv.stuffText,
                 message: llmResponse.message,
-                inputType: llmResponse.inputType,
-                fieldKey: llmResponse.fieldKey,
+                choices: llmResponse.choices,
                 done: true,
                 createdItem: createdItem as unknown as Record<string, unknown>,
             };
@@ -108,9 +105,7 @@ export const answerChatFlow = ai.defineFlow(
             agent: AGENT,
             title: conv.stuffText,
             message: llmResponse.message,
-            inputType: llmResponse.inputType,
             choices: llmResponse.choices,
-            fieldKey: llmResponse.fieldKey,
             done: false,
         };
     },

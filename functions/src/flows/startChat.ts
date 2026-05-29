@@ -39,8 +39,7 @@ export const startChatFlow = ai.defineFlow(
             return {
                 agent: "THOTH",
                 message: "Aucune idée à traiter pour le moment. Capture un stuff d'abord !",
-                inputType: "text_input" as const,
-                fieldKey: "info",
+                choices: ["Capturer une idée", "Revenir plus tard"],
                 done: true,
             };
         }
@@ -58,8 +57,7 @@ export const startChatFlow = ai.defineFlow(
             return {
                 agent: "THOTH",
                 message: "Ce stuff a déjà été traité.",
-                inputType: "text_input" as const,
-                fieldKey: "info",
+                choices: ["Voir le suivant", "Revenir plus tard"],
                 done: true,
             };
         }
@@ -69,10 +67,24 @@ export const startChatFlow = ai.defineFlow(
             conv = await createConversation(stuff.id, AGENT, stuff.text);
         }
 
-        // Si la conversation a déjà des messages, reprendre
+        // Si le dernier message est de l'agent (pas encore de réponse user), le renvoyer directement
+        if (conv.messages.length > 0) {
+            const lastMessage = conv.messages[conv.messages.length - 1];
+            if (lastMessage.role === "agent") {
+                return {
+                    agent: AGENT,
+                    actionId: stuff.id,
+                    title: stuff.text,
+                    message: lastMessage.text,
+                    choices: lastMessage.choices ?? ["Oui", "Non"],
+                    done: false,
+                };
+            }
+        }
+
+        // Sinon, appeler le LLM
         const history = buildChatHistory(conv.messages);
 
-        // Appeler le LLM
         const userPrompt = conv.messages.length === 0
             ? `Voici l'idée brute à qualifier : "${stuff.text}"`
             : "Continue la conversation. Pose la prochaine question.";
@@ -94,9 +106,7 @@ export const startChatFlow = ai.defineFlow(
         const agentMessage: ConversationMessage = {
             role: "agent",
             text: llmResponse.message,
-            inputType: llmResponse.inputType,
             choices: llmResponse.choices,
-            fieldKey: llmResponse.fieldKey,
             timestamp: new Date().toISOString(),
         };
         await addMessage(stuff.id, AGENT, agentMessage);
@@ -106,9 +116,7 @@ export const startChatFlow = ai.defineFlow(
             actionId: stuff.id,
             title: stuff.text,
             message: llmResponse.message,
-            inputType: llmResponse.inputType,
             choices: llmResponse.choices,
-            fieldKey: llmResponse.fieldKey,
             done: false,
         };
     },

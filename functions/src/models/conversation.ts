@@ -1,16 +1,6 @@
-import {TaskItem, EventItem} from "./types.js";
-
 // ==========================================
 // TYPES DE CONVERSATION (Firestore + API)
 // ==========================================
-
-export type InputType =
-    | "text_input"
-    | "number_input"
-    | "date_picker"
-    | "time_picker"
-    | "single_choice"
-    | "yes_no";
 
 export type ConversationStatus = "IN_PROGRESS" | "COMPLETED";
 
@@ -20,9 +10,7 @@ export type ConversationStatus = "IN_PROGRESS" | "COMPLETED";
 export interface ConversationMessage {
     role: "agent" | "user";
     text: string;
-    inputType?: InputType;   // Seulement pour role:"agent"
-    choices?: string[];      // Seulement pour single_choice
-    fieldKey?: string;       // Ex: "context", "priority"
+    choices?: string[];      // Toujours 2-4 choix pour role:"agent"
     timestamp: string;       // ISO 8601
 }
 
@@ -36,17 +24,4 @@ export interface ConversationDoc {
     messages: ConversationMessage[];
     createdAt: string;
     updatedAt: string;
-}
-
-/**
- * Réponse API envoyée au client.
- */
-export interface AgentResponse {
-    agent: string;
-    message: string;
-    inputType: InputType;
-    choices?: string[];
-    fieldKey: string;
-    done: boolean;
-    createdItem?: TaskItem | EventItem;
 }
