@@ -46,6 +46,13 @@ export async function markStuffWait(stuffId: string): Promise<void> {
     });
 }
 
+export async function updateStuffText(stuffId: string, newText: string): Promise<void> {
+    await itemsCol.doc(stuffId).update({
+        text: newText,
+        updatedAt: new Date().toISOString(),
+    });
+}
+
 /**
  * Trouve un stuff en WAIT dont toutes les tâches/événements liés sont DONE.
  */
