@@ -1,10 +1,24 @@
-import {ai} from "../config/genkit.js";
+import {ai, DEFAULT_MODEL} from "../config/genkit.js";
 import {CaptureStuffInputSchema, CaptureStuffOutputSchema} from "../models/schemas.js";
 import {createStuff} from "../services/firestore.js";
 
 /**
+ * Réécrit un texte brut capturé en une formulation propre et lisible.
+ */
+async function rewriteStuffText(rawText: string): Promise<string> {
+    const result = await ai.generate({
+        model: DEFAULT_MODEL,
+        prompt: `Réécris ce texte brut en une formulation propre, concise et lisible en français. Corrige l'orthographe, la grammaire et la casse. Ne change pas le sens. Retourne UNIQUEMENT le texte réécrit, sans guillemets ni explication.
+
+Texte brut : "${rawText}"`,
+    });
+    const rewritten = result.text?.trim();
+    return rewritten || rawText;
+}
+
+/**
  * Flow 1 : Capture d'un stuff (étape "Capture" de GTD).
- * Aucune intelligence ici, juste du stockage rapide.
+ * Le texte brut est réécrit proprement par le LLM avant stockage.
  */
 export const captureStuffFlow = ai.defineFlow(
     {
@@ -13,7 +27,8 @@ export const captureStuffFlow = ai.defineFlow(
         outputSchema: CaptureStuffOutputSchema,
     },
     async (input) => {
-        const stuff = await createStuff(input.text);
+        const cleanText = await rewriteStuffText(input.text);
+        const stuff = await createStuff(cleanText);
         return {stuffId: stuff.id};
     },
 );

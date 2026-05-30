@@ -15,7 +15,7 @@ export async function createStuff(text: string): Promise<StuffItem> {
     const stuff: StuffItem = {
         id: ref.id,
         type: "STUFF",
-        text,
+        text: text,
         status: "TODO",
         createdAt: now,
         updatedAt: now,

@@ -62,6 +62,7 @@ export const AgentResponseSchema = z.object({
     agent: z.string(),
     actionId: z.string().optional(),
     title: z.string().optional(),
+    subtitle: z.string().optional(),
     message: z.string(),
     choices: z.array(z.string()).optional(),
     done: z.boolean(),
