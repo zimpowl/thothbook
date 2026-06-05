@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Le Cadre</title>
+<style>
+  /* Angle animé de la lumière qui fait le tour du cadre. */
+  @property --tour { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+
+  :root {
+    /* Palette « musée futuriste » : mur crème, cadre bronze/bois, lumière dorée. */
+    --wall: #d8ccb6; --bg: #f7f2e9; --card: #fffdf8; --frame: #2b231c; --soft: #8c8174;
+    --line: #e7ded0; --bronze: #9a7a4d; --bronze-d: #5e4729; --gold: #c8a567; --light: #ffe09a;
+    --accent: #9a7a4d; --ok: #5b7d4f; --warn: #c98a2e; --sortie: #b06a3f;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; overflow: hidden;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--frame);
+    background: radial-gradient(circle at 50% -10%, #e9e0cd, var(--wall));
+  }
+
+  /* ---------- Le CADRE qui entoure l'app ---------- */
+  .app-frame {
+    position: fixed; inset: 16px; border-radius: 26px; padding: 13px;
+    background: linear-gradient(135deg, #e0c590 0%, #a17e4d 24%, #6c5030 50%, #8e6c40 72%, #d2ab68 100%);
+    box-shadow: 0 32px 80px rgba(38,26,12,.42),
+                inset 0 2px 3px rgba(255,255,255,.45),
+                inset 0 -3px 8px rgba(0,0,0,.35);
+  }
+  /* La lumière : anneau lumineux qui tourne sur le bord, visible seulement au chargement. */
+  .app-frame::before {
+    content: ""; position: absolute; inset: 0; border-radius: 26px; padding: 3.5px;
+    background: conic-gradient(from var(--tour),
+      transparent 0 38%, rgba(255,221,140,.5) 54%, var(--light) 68%, #fffdf2 80%,
+      var(--light) 90%, rgba(255,221,140,.5) 97%, transparent 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity: 0; transition: opacity .35s; pointer-events: none;
+    filter: drop-shadow(0 0 14px var(--light)) drop-shadow(0 0 5px #fff7df);
+  }
+  .app-frame.loading::before { opacity: 1; animation: tourLumiere .95s linear infinite; }
+  @keyframes tourLumiere { to { --tour: 360deg; } }
+  /* Halo doré qui pulse autour du cadre pendant la réflexion (renforce la visibilité). */
+  .app-frame.loading { animation: haloCadre 1.5s ease-in-out infinite; }
+  @keyframes haloCadre {
+    0%, 100% { box-shadow: 0 32px 80px rgba(38,26,12,.42), inset 0 2px 3px rgba(255,255,255,.45),
+                           inset 0 -3px 8px rgba(0,0,0,.35), 0 0 0 0 rgba(255,222,140,0); }
+    50%      { box-shadow: 0 32px 80px rgba(38,26,12,.42), inset 0 2px 3px rgba(255,255,255,.45),
+                           inset 0 -3px 8px rgba(0,0,0,.35), 0 0 48px 7px rgba(255,222,140,.65); }
+  }
+
+  .app-inner {
+    position: absolute; inset: 13px; border-radius: 14px; background: var(--bg);
+    overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.05), 0 0 22px rgba(0,0,0,.18) inset;
+  }
+
+  /* ---------- Barre du haut (compacte) ---------- */
+  .topbar {
+    display: flex; align-items: center; gap: 14px; padding: 10px 18px;
+    border-bottom: 1px solid var(--line); flex: 0 0 auto;
+  }
+  .brand { display: flex; flex-direction: column; line-height: 1.05; flex: 0 0 auto; }
+  .brand b { font-size: 15px; letter-spacing: 3px; color: var(--frame); }
+  .brand small { font-size: 10.5px; color: var(--soft); font-style: italic; }
+  .tabs { display: flex; gap: 8px; margin: 0 auto; }
+  .tab { background: #efe7d8; color: var(--bronze-d); border-radius: 999px; padding: 8px 18px; cursor: pointer; border: none; font: inherit; transition: background .2s; }
+  .tab.actif { background: linear-gradient(135deg, var(--bronze), var(--bronze-d)); color: #fdf6e8; font-weight: 600; }
+
+  .emo { background: #efe7d8; border: 1px solid transparent; border-radius: 999px; padding: 6px 11px; font-size: 17px; line-height: 1; }
+  .solde-pill { font-size: 14px; font-weight: 700; color: var(--bronze-d); padding: 9px 14px; }
+  .icon-btn { background: #efe7d8; color: var(--bronze-d); border: none; border-radius: 999px; width: 38px; height: 38px; cursor: pointer; font-size: 16px; }
+  .icon-btn.gold {
+    background: linear-gradient(135deg, #d9b36b, #8f6c2f); color: #fff7e8;
+    box-shadow: 0 8px 20px rgba(143,108,47,.34); font-size: 22px; font-weight: 700;
+  }
+
+  /* ---------- Zone de contenu ---------- */
+  .content { flex: 1 1 auto; min-height: 0; padding: 16px; }
+  .vue { height: 100%; }
+  .hidden { display: none !important; }
+
+  /* Grille « Aujourd'hui » : Objectifs+Habitudes à gauche, centre = cartes, Tâches pleine hauteur à droite. */
+  #vue-aujourdhui { display: grid; grid-template-columns: minmax(220px,1fr) minmax(360px,1.5fr) minmax(220px,1fr); gap: 16px; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+
+  .panel { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column;
+           background: var(--card); border: 1px solid var(--line); border-radius: 22px;
+           box-shadow: 0 6px 20px rgba(60,44,28,.06); overflow: hidden; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px 8px; flex: 0 0 auto; }
+  .panel-head h3 { margin: 0; font-size: 11.5px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--soft); }
+  .panel-body { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 14px 14px; }
+
+  .panel-body ul { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+  .panel-body li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+  .panel-body li:last-child { border-bottom: none; }
+  .t-nom { flex: 1; }
+  .vide { color: var(--soft); font-size: 13.5px; padding: 6px 4px; }
+  .pastille { display: inline-block; color: var(--warn); font-weight: 800; margin-left: 4px; }
+
+  .t-btns { display: flex; gap: 6px; flex-shrink: 0; }
+  .mini { border-radius: 10px; padding: 5px 9px; font-size: 13px; border: none; cursor: pointer; background: #efe7d8; }
+  .mini.done { background: #e7efe0; }
+  .mini.supprimer { background: #f4e4da; }
+
+  /* Objectifs / habitudes (cartes empilées dans le panneau) */
+  .obj, .hab { display: block; border-radius: 14px; padding: 9px 10px; }
+  .obj { cursor: pointer; transition: background .15s, box-shadow .15s; }
+  .obj:hover { background: #f4ece0; }
+  .obj.selected { background: #f0e3c9; box-shadow: inset 0 0 0 1px var(--gold); }
+  .obj-haut { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .obj-bar { height: 6px; background: var(--line); border-radius: 999px; margin: 7px 0 2px; overflow: hidden; }
+  .obj-bar span { display: block; height: 100%; background: var(--ok); border-radius: 999px; transition: width .25s; }
+  .obj-prog { font-size: 12px; color: var(--soft); }
+  .badge { display: inline-block; font-size: 12px; border-radius: 999px; padding: 2px 9px; margin-top: 6px; }
+  .badge.ok { background: #e7f1e1; color: var(--ok); }
+  .badge.warn { background: #f7ecd6; color: #8a5a16; }
+
+  /* Filtrage des tâches par objectif */
+  .filtre-chip { display: inline-flex; align-items: center; gap: 8px; background: #f0e3c9; color: var(--bronze-d);
+                 border-radius: 999px; padding: 4px 6px 4px 12px; font-size: 12.5px; margin: 4px 0 10px; }
+  .filtre-chip button { background: var(--bronze-d); color: #fdf6e8; border: none; border-radius: 999px; padding: 3px 9px; font-size: 12px; cursor: pointer; }
+  .sous-titre { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--warn); margin: 6px 0 2px; font-weight: 700; }
+  .afaire-section { margin-bottom: 6px; }
+  .load-more { text-align: center; font-style: italic; }
+
+  /* ---------- Centre : les suggestions (le cœur) ---------- */
+  .centre { display: flex; flex-direction: column; min-height: 0; }
+  .centre-haut { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 6px; }
+  .centre-bas { flex: 0 0 auto; padding-top: 12px; }
+  .centre-vide { text-align: center; color: var(--soft); margin-top: 16%; font-size: 15px; line-height: 1.6; }
+  .centre-vide .big { font-size: 32px; display: block; margin-bottom: 8px; }
+
+  .message { background: #f3ece0; border-left: 4px solid var(--gold); padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 15px; }
+  .loader { text-align: center; color: var(--soft); padding: 24px; font-style: italic; }
+
+  .carte { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 18px 20px; margin-bottom: 14px; box-shadow: 0 6px 22px rgba(60,44,28,.07); transition: transform .12s, box-shadow .2s; }
+  /* Prompt présent sous chaque carte : parler à Thoth de cette carte. */
+  .carte-prompt { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+  .carte-prompt input { flex: 1; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; font: inherit; background: var(--bg); }
+  .carte-prompt input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,165,103,.2); }
+  .carte:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(60,44,28,.12); }
+  .carte h2 { margin: 0 0 4px; font-size: 18px; color: var(--frame); }
+  .quand { color: var(--bronze); font-size: 13px; font-weight: 600; }
+  .pourquoi { color: #4a4038; font-size: 14px; margin: 10px 0; line-height: 1.5; }
+  .tags { font-size: 12px; color: var(--soft); margin-bottom: 12px; }
+  .tag { background: #f3ece0; border-radius: 8px; padding: 2px 9px; margin-right: 6px; white-space: nowrap; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  button { font: inherit; cursor: pointer; border: none; border-radius: 12px; padding: 10px 15px; transition: transform .06s, box-shadow .2s, background .2s; }
+  button:active { transform: translateY(1px) scale(.99); }
+  .primary { background: linear-gradient(135deg, var(--bronze), var(--bronze-d)); color: #fdf6e8; font-weight: 600; letter-spacing: .3px; box-shadow: 0 8px 22px rgba(94,71,41,.32); }
+  .primary:hover { box-shadow: 0 10px 28px rgba(94,71,41,.42); }
+  .ghost { background: #efe7d8; color: var(--bronze-d); }
+  .btn-ok { background: var(--ok); color: #fff; font-weight: 600; }
+  .btn-focus { background: #efe7d8; color: var(--bronze-d); font-weight: 600; }
+  .btn-plan { background: #efe7d8; color: var(--bronze-d); font-weight: 600; box-shadow: inset 0 0 0 1px var(--gold); }
+  .btn-adj { background: #f7ecd6; color: #8a5a16; }
+  .btn-skip { background: #f1ece3; color: var(--soft); }
+  .ajuster { margin-top: 12px; display: none; gap: 8px; }
+  .ajuster.open { display: flex; }
+  .ajuster input { flex: 1; padding: 10px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: var(--bg); }
+
+  /* Gros bouton « + » en bas du centre (unique point d'entrée de création) */
+  .btn-plus { width: 100%; padding: 15px; font-size: 15px; }
+  .send-btn { width: 44px; height: 44px; flex: 0 0 auto; border-radius: 13px; background: linear-gradient(135deg, var(--bronze), var(--bronze-d)); color: #fdf6e8; font-size: 17px; display: flex; align-items: center; justify-content: center; }
+
+  /* ---------- Calendrier (recoloré sur la nouvelle palette) ---------- */
+  #vue-agenda { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+  .cal-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex: 0 0 auto; }
+  .cal-nav h2 { margin: 0; font-size: 18px; text-transform: capitalize; flex: 1; text-align: center; }
+  .cal-views { display: flex; gap: 6px; }
+  .cal-views button { background: #efe7d8; color: var(--bronze-d); border-radius: 999px; padding: 6px 16px; }
+  .cal-views button.actif { background: linear-gradient(135deg, var(--bronze), var(--bronze-d)); color: #fdf6e8; font-weight: 600; }
+
+  .cal { flex: 1; min-height: 0; display: flex; flex-direction: column;
+         border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--card); }
+  .cal-head { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--line); }
+  .cal-th { text-align: center; font-size: 12px; color: var(--soft); padding: 7px 0; text-transform: uppercase; letter-spacing: .5px; }
+  .cal-th.ajd { color: var(--bronze); font-weight: 700; }
+  .cal-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .cal-week { position: relative; flex: 1 1 0; display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--line); }
+  .cal-week:first-child { border-top: none; }
+  .cal-week.semaine { overflow-y: auto; }
+  .cal-day { border-left: 1px solid var(--line); position: relative; }
+  .cal-day:first-child { border-left: none; }
+  .cal-day.ajd { background: #f6efe1; }
+  .cal-day.hors .cal-num { color: #cbc1ad; }
+  .cal-num { font-size: 12px; color: var(--soft); font-weight: 600; padding: 4px 6px; }
+  .cal-more { position: absolute; bottom: 3px; left: 6px; font-size: 11px; color: var(--soft); }
+
+  .cal-bars { position: absolute; inset: 0; pointer-events: none; }
+  .cal-bar { position: absolute; height: 18px; line-height: 18px; border-radius: 6px; color: #fff;
+             font-size: 11px; padding: 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+             cursor: pointer; pointer-events: auto; display: flex; align-items: center; }
+  .cal-bar .bar-txt { overflow: hidden; text-overflow: ellipsis; }
+  .cal-bar.a_venir { background: var(--bronze); }        /* bronze : à venir */
+  .cal-bar.fait    { background: var(--ok); }            /* vert : fait (révisé OK) */
+  .cal-bar.a_revoir{ background: var(--warn); }          /* ambre : passé, à revoir */
+  .cal-bar.sortie  { background: var(--sortie); }        /* terracotta : sortie */
+  .cal-bar .bar-actions { display: none; margin-left: auto; gap: 2px; padding-left: 6px; flex-shrink: 0; }
+  .cal-bar:hover .bar-actions { display: flex; }
+  .cal-bar .bar-actions button { background: rgba(255,255,255,.25); border: none; color: #fff; border-radius: 5px; padding: 0 4px; font-size: 11px; cursor: pointer; line-height: 18px; }
+  .cal-bar .bar-actions button:hover { background: rgba(255,255,255,.45); }
+
+  .ev-lbl { display: block; font-size: 12px; color: var(--soft); margin: 12px 0 4px; }
+  .ev-in { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; font: inherit; background: var(--bg); }
+
+  /* ---------- Overlays (édition d'événement, connexion) ---------- */
+  .overlay { position: fixed; inset: 0; background: rgba(43,35,28,.55); display: none; align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(2px); }
+  .overlay.open { display: flex; }
+  .timer { background: var(--card); border-radius: 22px; padding: 28px; text-align: center; width: 340px; box-shadow: 0 24px 60px rgba(38,26,12,.4); }
+  .timer h2 { margin: 0 0 4px; font-size: 18px; }
+  .timer .focus-sur { color: var(--soft); font-size: 13px; margin-bottom: 14px; }
+  .timer .ctrls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+  .credits-modal { width: min(760px, 94vw); text-align: left; position: relative; }
+  .credits-close {
+    position: absolute; top: 18px; right: 18px; width: 36px; height: 36px; border-radius: 999px;
+    background: #efe7d8; color: var(--bronze-d); padding: 0;
+  }
+  .credits-intro { color: #4a4038; font-size: 14px; line-height: 1.55; margin-top: 6px; }
+  .credits-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 18px; }
+  .pack-card {
+    border: 1px solid var(--line); border-radius: 18px; padding: 16px; background: #fffaf1;
+    box-shadow: 0 8px 24px rgba(60,44,28,.08); display: flex; flex-direction: column; gap: 10px;
+  }
+  .pack-card.best { border-color: var(--gold); box-shadow: 0 12px 26px rgba(200,165,103,.18); }
+  .pack-badge {
+    align-self: flex-start; background: linear-gradient(135deg, #ecd39d, #bb9147); color: #5e4729;
+    border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  }
+  .pack-title { font-size: 16px; font-weight: 800; }
+  .pack-price { font-size: 28px; font-weight: 900; color: var(--frame); }
+  .pack-credits { font-size: 15px; font-weight: 700; color: var(--bronze-d); }
+  .pack-bonus { color: var(--ok); font-size: 13px; font-weight: 700; }
+  .pack-desc { color: var(--soft); font-size: 13px; line-height: 1.45; min-height: 56px; }
+  .pack-cta { width: 100%; margin-top: auto; }
+  .credits-note { color: var(--soft); font-size: 12px; margin-top: 14px; }
+  .credits-inline-msg {
+    margin-top: 10px; padding: 11px 12px; border-radius: 12px; background: #f5efe3; color: var(--bronze-d);
+    font-size: 13px;
+  }
+
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--frame); color: #fdf6e8; padding: 12px 18px; border-radius: 12px; opacity: 0; transition: opacity .25s; pointer-events: none; font-size: 14px; z-index: 60; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+  .toast.show { opacity: 1; }
+
+  /* ---------- Responsive (mobile : on empile) ---------- */
+  @media (max-width: 880px) {
+    .app-frame { inset: 6px; padding: 8px; border-radius: 18px; }
+    .app-frame::before, .app-inner { border-radius: 18px; }
+    .app-inner { inset: 8px; }
+    .content { padding: 12px; overflow-y: auto; }
+    #vue-aujourdhui { grid-template-columns: 1fr; height: auto; }
+    .col, .centre { min-height: auto; }
+    .panel { flex: none; height: auto; max-height: 320px; }
+    .centre-haut { overflow: visible; }
+    .brand small { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app-frame" id="frame">
+  <div class="app-inner">
+
+    <!-- BARRE DU HAUT -->
+    <div class="topbar">
+      <div class="brand">
+        <b>LE CADRE</b>
+        <small>Je te guide, je ne te contrains pas.</small>
+      </div>
+      <div class="tabs">
+        <button class="tab actif" id="tab-ajd" onclick="ouvrirVue('aujourdhui')">✨ Aujourd'hui</button>
+        <button class="tab" id="tab-agenda" onclick="ouvrirVue('agenda')">📅 Agenda</button>
+      </div>
+      <button class="icon-btn gold" title="Recharger des crédits" onclick="ouvrirModalCredits()">＋</button>
+      <span class="emo solde-pill" id="solde" title="Crédits restants" style="cursor:default;">🪙 Crédits : 0</span>
+      <button class="icon-btn" title="Déconnexion" onclick="deconnexion()">⎋</button>
+    </div>
+
+    <!-- CONTENU -->
+    <div class="content">
+
+      <!-- VUE AUJOURD'HUI -->
+      <div id="vue-aujourdhui" class="vue">
+        <!-- Colonne gauche : objectifs + habitudes -->
+        <div class="col">
+          <div class="panel">
+            <div class="panel-head"><h3>🎯 Objectifs</h3></div>
+            <div class="panel-body" id="p-objectifs"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>🔁 Habitudes</h3></div>
+            <div class="panel-body" id="p-habitudes"></div>
+          </div>
+        </div>
+
+        <!-- Centre : suggestions (la valeur) + bouton + prompt -->
+        <div class="centre">
+          <div class="centre-haut">
+            <div id="message"></div>
+            <div id="cartes"></div>
+          </div>
+          <div class="centre-bas">
+            <button class="primary btn-plus" onclick="ouvrirCreation()">＋ Ajouter une tâche, un événement ou une habitude</button>
+          </div>
+        </div>
+
+        <!-- Colonne droite : à faire (+ en cours), pleine hauteur -->
+        <div class="col">
+          <div class="panel">
+            <div class="panel-head"><h3>✅ À faire</h3></div>
+            <div class="panel-body" id="p-afaire"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VUE AGENDA -->
+      <div id="vue-agenda" class="vue hidden">
+        <div class="cal-nav">
+          <div class="cal-views">
+            <button id="vbtn-mois" class="actif" onclick="setView('mois')">Mois</button>
+            <button id="vbtn-sem" onclick="setView('semaine')">Semaine</button>
+          </div>
+          <button class="ghost" onclick="changerPeriode(-1)">←</button>
+          <h2 id="cal-titre"></h2>
+          <button class="ghost" onclick="changerPeriode(1)">→</button>
+          <button class="ghost" onclick="allerAujourdhui()">Aujourd'hui</button>
+        </div>
+        <div class="cal">
+          <div class="cal-head" id="cal-head"></div>
+          <div class="cal-body" id="cal-body"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ÉDITION D'UN ÉVÉNEMENT DE L'AGENDA -->
+<div class="overlay" id="ev-overlay">
+  <div class="timer" style="width: 340px; text-align: left;">
+    <h2 style="text-align: center;">Modifier l'événement</h2>
+    <label class="ev-lbl">Titre</label>
+    <input id="ev-titre" class="ev-in" />
+    <label class="ev-lbl">Début</label>
+    <input id="ev-debut" class="ev-in" type="datetime-local" />
+    <label class="ev-lbl">Fin</label>
+    <input id="ev-fin" class="ev-in" type="datetime-local" />
+    <div class="ctrls" style="margin-top: 18px; justify-content: flex-end;">
+      <button class="btn-skip" onclick="fermerEditEvent()">Annuler</button>
+      <button class="mini supprimer" style="padding: 9px 12px;" onclick="supprimerEventCourant()">🗑️ Supprimer</button>
+      <button class="btn-ok" onclick="enregistrerEvent()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ÉCRAN DE CONNEXION (ouvert tant que l'utilisateur n'est pas authentifié) -->
+<div class="overlay open" id="login-overlay">
+  <div class="timer" style="width: 360px; text-align: left;">
+    <h2 style="text-align:center; letter-spacing:3px;">LE CADRE</h2>
+    <div class="focus-sur" style="text-align:center;">Connecte-toi pour entrer dans le cadre.</div>
+    <label class="ev-lbl">Email</label>
+    <input id="login-email" class="ev-in" type="email" autocomplete="email" />
+    <label class="ev-lbl">Mot de passe</label>
+    <input id="login-mdp" class="ev-in" type="password" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter') connexionEmail()" />
+    <div id="login-erreur" style="color:#d64545; font-size:13px; min-height:16px; margin-top:8px;"></div>
+    <div class="ctrls" style="margin-top:14px; justify-content:space-between;">
+      <button class="ghost" onclick="inscriptionEmail()">Créer un compte</button>
+      <button class="btn-ok" onclick="connexionEmail()">Se connecter</button>
+    </div>
+    <div style="margin-top:12px;">
+      <button class="btn-focus" onclick="connexionGoogle()" style="width:100%;">Continuer avec Google</button>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP DE RECHARGE DES CRÉDITS -->
+<div class="overlay" id="credits-overlay" onclick="clicFondCredits(event)">
+  <div class="timer credits-modal">
+    <button class="credits-close" id="credits-close" onclick="fermerModalCredits()">✕</button>
+    <h2>Recharger mes crédits</h2>
+    <div class="focus-sur" id="credits-subtitle">Choisis un pack pour continuer à utiliser Thoth.</div>
+    <div class="credits-intro" id="credits-intro">
+      Les crédits sont débités en nombres entiers, avec une tarification premium.
+    </div>
+    <div id="credits-status" class="credits-inline-msg hidden"></div>
+    <div class="credits-grid" id="credits-packs"></div>
+    <div class="credits-note">
+      Paiement sécurisé par Stripe. Les crédits sont ajoutés uniquement après confirmation du webhook.
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase Auth (SDK compat : expose un objet global `firebase`) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* ===================== AUTHENTIFICATION FIREBASE ===================== */
+// ⚠️ REMPLACE ces valeurs par la config de TON projet Firebase :
+// Console Firebase -> Paramètres du projet -> « Tes applications » (Web) -> Config SDK.
+const firebaseConfig = {
+  apiKey: "AIzaSyCG-wnuUZ5qi3oqTo7hDcvJV_9_ydE2JQw",
+  authDomain: "thothbook.firebaseapp.com",
+  projectId: "thothbook",
+  storageBucket: "thothbook.firebasestorage.app",
+  messagingSenderId: "308082990960",
+  appId: "1:308082990960:web:f4268220463421aeee79b5",
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+let utilisateurFirebase = null;
+let appDemarree = false;
+let soldeCourant = 0;
+let offresCredits = [];
+let paiementActif = false;
+let devisePaiement = "eur";
+let modalCreditsForce = false;
+let attenteCreditCheckout = false;
+
+auth.onAuthStateChanged((user) => {
+  utilisateurFirebase = user;
+  const login = document.getElementById("login-overlay");
+  if (user) {
+    login.classList.remove("open");
+    if (!appDemarree) { appDemarree = true; demarrer(); }
+  } else {
+    appDemarree = false;
+    soldeCourant = 0;
+    offresCredits = [];
+    paiementActif = false;
+    attenteCreditCheckout = false;
+    fermerModalCredits(true);
+    login.classList.add("open");
+  }
+});
+
+// Appel API : ajoute le jeton Firebase (Bearer) + le préfixe /api, et gère 401/402.
+// `url` est construit à part exprès, pour que ce fetch ne soit pas confondu avec les
+// appels applicatifs (qui passent tous par api(...)).
+async function api(path, opts = {}) {
+  const headers = Object.assign({}, opts.headers || {});
+  if (utilisateurFirebase) {
+    headers["Authorization"] = "Bearer " + (await utilisateurFirebase.getIdToken());
+  }
+  const url = "/api" + path;
+  const res = await fetch(url, Object.assign({}, opts, { headers }));
+  if (res.status === 401) { await auth.signOut(); throw new Error("non authentifié"); }
+  if (res.status === 402) {
+    const d = await res.json().catch(() => ({}));
+    await creditsEpuises(d.detail || "Crédits épuisés.");
+    throw new Error("crédits épuisés");
+  }
+  return res;
+}
+
+function loginErreur(msg) { document.getElementById("login-erreur").textContent = msg || ""; }
+async function connexionEmail() {
+  loginErreur("");
+  try {
+    await auth.signInWithEmailAndPassword(
+      document.getElementById("login-email").value.trim(),
+      document.getElementById("login-mdp").value);
+  } catch (e) { loginErreur("Connexion impossible : " + (e.code || e.message)); }
+}
+async function inscriptionEmail() {
+  loginErreur("");
+  try {
+    await auth.createUserWithEmailAndPassword(
+      document.getElementById("login-email").value.trim(),
+      document.getElementById("login-mdp").value);
+  } catch (e) { loginErreur("Inscription impossible : " + (e.code || e.message)); }
+}
+async function connexionGoogle() {
+  loginErreur("");
+  try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+  catch (e) { loginErreur("Google : " + (e.code || e.message)); }
+}
+function deconnexion() { auth.signOut(); }
+
+function majAffichageSolde(solde) {
+  document.getElementById("solde").textContent = `🪙 Crédits : ${Math.max(0, solde || 0)}`;
+}
+
+async function chargerOffresCredits(force = false) {
+  if (!utilisateurFirebase) return { actif: false, devise: "eur", packs: [] };
+  if (offresCredits.length && !force) return { actif: paiementActif, devise: devisePaiement, packs: offresCredits };
+  try {
+    const d = await (await api("/paiements/offres")).json();
+    offresCredits = d.packs || [];
+    paiementActif = !!d.actif;
+    devisePaiement = d.devise || "eur";
+    renderModalCredits();
+    return d;
+  } catch (e) {
+    paiementActif = false;
+    offresCredits = [];
+    renderModalCredits("Le module de paiement n'est pas encore configuré.");
+    return { actif: false, devise: "eur", packs: [] };
+  }
+}
+
+function renderModalCredits(message) {
+  const zone = document.getElementById("credits-packs");
+  const status = document.getElementById("credits-status");
+  if (message) {
+    status.classList.remove("hidden");
+    status.textContent = message;
+  } else {
+    status.classList.add("hidden");
+    status.textContent = "";
+  }
+  if (!offresCredits.length) {
+    zone.innerHTML = `<div class="credits-inline-msg">${paiementActif
+      ? "Aucun pack n'est configuré pour le moment."
+      : "Le paiement Stripe n'est pas encore activé. Ajoute les secrets côté backend pour ouvrir les recharges."}</div>`;
+    return;
+  }
+  zone.innerHTML = offresCredits.map((pack, index) => `
+    <div class="pack-card${index === 1 ? " best" : ""}">
+      ${pack.badge ? `<div class="pack-badge">${escapeHtml(pack.badge)}</div>` : ""}
+      <div class="pack-title">${escapeHtml(pack.label)}</div>
+      <div class="pack-price">${Number(pack.prix_eur).toFixed(0)} €</div>
+      <div class="pack-credits">🪙 ${pack.total_credits} crédits</div>
+      ${pack.bonus_credits ? `<div class="pack-bonus">+${pack.bonus_credits} crédits bonus</div>` : `<div class="pack-bonus">Sans bonus d'entrée</div>`}
+      <div class="pack-desc">${escapeHtml(pack.description || "")}</div>
+      <button class="primary pack-cta" ${paiementActif ? "" : "disabled"} onclick="acheterPack('${pack.id}')">
+        ${paiementActif ? `Payer ${Number(pack.prix_eur).toFixed(0)} €` : "Indisponible"}
+      </button>
+    </div>`).join("");
+}
+
+function ouvrirModalCredits(opts = {}) {
+  modalCreditsForce = !!opts.force;
+  if (utilisateurFirebase) chargerOffresCredits();
+  document.getElementById("credits-subtitle").textContent = modalCreditsForce
+    ? "Tu es à zéro crédit : choisis un pack pour relancer les suggestions IA."
+    : "Choisis un pack si tu veux recharger avant de tomber à zéro.";
+  document.getElementById("credits-intro").textContent = modalCreditsForce
+    ? "Les appels IA sont bloqués à 0 crédit. Les panneaux restent visibles, mais Thoth a besoin d'une recharge pour repartir."
+    : "Les crédits sont débités en nombres entiers, avec une marge volontairement premium et des bonus croissants sur les gros packs.";
+  renderModalCredits();
+  document.getElementById("credits-overlay").classList.add("open");
+}
+
+function fermerModalCredits(force = false) {
+  if (force) modalCreditsForce = false;
+  modalCreditsForce = false;
+  document.getElementById("credits-overlay").classList.remove("open");
+}
+
+function clicFondCredits(event) {
+  if (event.target === document.getElementById("credits-overlay")) fermerModalCredits();
+}
+
+async function acheterPack(packId) {
+  try {
+    const data = await (await api("/paiements/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pack_id: packId }),
+    })).json();
+    if (!data.url) throw new Error("Session Stripe invalide.");
+    window.location.href = data.url;
+  } catch (e) {
+    renderModalCredits(e.message || "Impossible de démarrer le paiement.");
+  }
+}
+
+async function creditsEpuises(msg) {
+  try {
+    const d = await (await api("/solde")).json();
+    soldeCourant = Math.max(0, parseInt(d.solde || 0, 10) || 0);
+    majAffichageSolde(soldeCourant);
+  } catch (e) { /* silencieux */ }
+  document.getElementById("message").innerHTML =
+    `<div class="message">⚠️ ${escapeHtml(msg)} <b>Recharge nécessaire</b> pour continuer.</div>`;
+  document.getElementById("cartes").innerHTML = "";
+  await chargerOffresCredits(true);
+  ouvrirModalCredits({ force: false });
+}
+
+// Solde de crédits affiché dans la barre du haut.
+async function chargerSolde(opts = {}) {
+  try {
+    const d = await (await api("/solde")).json();
+    soldeCourant = Math.max(0, parseInt(d.solde || 0, 10) || 0);
+    majAffichageSolde(soldeCourant);
+    if (opts.ouvrirPopupSiVide !== false && soldeCourant <= 0 && !attenteCreditCheckout) {
+      await chargerOffresCredits();
+      ouvrirModalCredits({ force: false });
+    } else if (soldeCourant > 0) {
+      fermerModalCredits(true);
+      attenteCreditCheckout = false;
+    }
+  } catch (e) { /* silencieux */ }
+  return soldeCourant;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function attendreCreditApresPaiement() {
+  for (let i = 0; i < 15; i += 1) {
+    const solde = await chargerSolde({ ouvrirPopupSiVide: false });
+    if (solde > 0) {
+      toast("Crédits ajoutés ✔");
+      fermerModalCredits(true);
+      await proposerSiVide();
+      return;
+    }
+    await sleep(2000);
+  }
+  attenteCreditCheckout = false;
+  await chargerOffresCredits(true);
+  renderModalCredits("Paiement reçu, mais crédits pas encore visibles. Vérifie le webhook Stripe puis réessaie dans 1 minute.");
+  ouvrirModalCredits({ force: false });
+}
+
+function gererRetourCheckout() {
+  const url = new URL(window.location.href);
+  const etat = url.searchParams.get("checkout");
+  if (!etat) return;
+  if (etat === "success") {
+    attenteCreditCheckout = true;
+    toast("Paiement confirmé. Synchronisation des crédits en cours...");
+    setTimeout(() => { attendreCreditApresPaiement(); }, 600);
+  }
+  if (etat === "cancel") toast("Paiement annulé.");
+  url.searchParams.delete("checkout");
+  history.replaceState({}, "", url.pathname + (url.search ? url.search : "") + url.hash);
+}
+/* =================== FIN AUTHENTIFICATION FIREBASE =================== */
+
+let tachesCourantes = [];
+let enCoursCourantes = [];
+let objectifsCourants = [];
+let habitudesCourantes = [];
+let evenements = [];
+
+let reportes = [];                  // suggestions écartées (« Plus tard ») — à ne pas répéter
+let objectifFiltre = null;          // filtre « À faire » par objectif (null = tout)
+const AFAIRE_PAGE = 12;             // scroll infini : tâches affichées par paquet
+let afaireMax = AFAIRE_PAGE;
+
+const LABELS_ACTION = {
+  creer_objectif: "🎯 nouvel objectif", creer_tache: "✅ nouvelle tâche",
+  creer_habitude: "🔁 nouvelle habitude", ajouter_personne: "👤 ajout personne",
+  creer_sortie: "🎉 sortie planifiée", planifier: "📅 créneau planifié",
+  marquer_fait: "✔️ tâche faite", noter_progres: "↪ tâche en cours",
+  supprimer_tache: "🗑️ tâche supprimée",
+  atteindre_objectif: "🏆 objectif atteint", abandonner_objectif: "🚫 objectif abandonné",
+  terminer_habitude: "🏁 habitude terminée", abandonner_habitude: "🚫 habitude abandonnée",
+};
+const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+const JOURS = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+
+function toast(txt) {
+  const t = document.getElementById("toast");
+  t.textContent = txt; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
+}
+// Lumière qui fait le tour du cadre pendant que Thoth réfléchit.
+function frameLoading(on) { document.getElementById("frame").classList.toggle("loading", on); }
+
+/* ---------- Onglets ---------- */
+function ouvrirVue(vue) {
+  const ajd = vue === "aujourdhui";
+  document.getElementById("vue-aujourdhui").classList.toggle("hidden", !ajd);
+  document.getElementById("vue-agenda").classList.toggle("hidden", ajd);
+  document.getElementById("tab-ajd").classList.toggle("actif", ajd);
+  document.getElementById("tab-agenda").classList.toggle("actif", !ajd);
+  if (!ajd) chargerAgenda();
+}
+
+/* ---------- État : remplit les 4 panneaux ---------- */
+async function chargerEtat() {
+  const d = await (await api("/etat")).json();
+  objectifsCourants = d.objectifs || [];
+  tachesCourantes = d.taches || [];
+  enCoursCourantes = d.en_cours || [];
+  habitudesCourantes = d.habitudes || [];
+  // Si l'objectif filtré n'existe plus, on lève le filtre.
+  if (objectifFiltre && !objectifsCourants.some(o => o.nom === objectifFiltre)) objectifFiltre = null;
+  renderObjectifs(); renderHabitudes(); renderAfaire();
+}
+
+function renderObjectifs() {
+  const body = document.getElementById("p-objectifs");
+  body.innerHTML = objectifsCourants.length
+    ? `<ul>${objectifsCourants.map((o, i) => {
+        const pct = o.total ? Math.round(100 * o.faites / o.total) : 0;
+        const prog = o.total
+          ? `${o.faites}/${o.total} tâche${o.total > 1 ? "s" : ""} · ${o.priorite}`
+          : `aucune tâche · ${o.priorite}`;
+        const sel = objectifFiltre === o.nom ? " selected" : "";
+        return `<li class="obj${sel}" onclick="filtrerObjectif(${i})" title="Voir ses tâches">
+          <div class="obj-haut">
+            <span class="o-nom">${escapeHtml(o.nom)}</span>
+            <span class="t-btns" onclick="event.stopPropagation()">
+              <button class="mini focus" title="Prochaine étape" onclick="avancerObjectif(${i})">▶️</button>
+              <button class="mini done" title="Objectif atteint" onclick="atteindreObjectif(${i})">🏆</button>
+              <button class="mini supprimer" title="Abandonner" onclick="abandonnerObjectif(${i})">✕</button>
+            </span>
+          </div>
+          <div class="obj-bar"><span style="width:${pct}%"></span></div>
+          <div class="obj-prog">${prog}</div>
+        </li>`;
+      }).join("")}</ul>`
+    : `<div class="vide">Aucun objectif. Dis-m'en un&nbsp;!</div>`;
+}
+
+function renderHabitudes() {
+  const body = document.getElementById("p-habitudes");
+  body.innerHTML = habitudesCourantes.length
+    ? `<ul>${habitudesCourantes.map((h, i) => {
+        const r = regularite(h.seances || [], h.frequence);
+        return `<li class="hab">
+          <div class="obj-haut">
+            <span class="o-nom">${escapeHtml(h.nom)} <span class="vide">${escapeHtml(h.frequence)}</span></span>
+            <span class="t-btns" onclick="event.stopPropagation()">
+              <button class="mini focus" title="Planifier une séance" onclick="planifierHabitude(${i})">▶️</button>
+              <button class="mini done" title="Terminer" onclick="terminerHabitude(${i})">🏁</button>
+              <button class="mini supprimer" title="Abandonner" onclick="abandonnerHabitude(${i})">✕</button>
+            </span>
+          </div>
+          <span class="badge ${r.cls}">${r.txt}</span>
+        </li>`;
+      }).join("")}</ul>`
+    : `<div class="vide">Aucune habitude.</div>`;
+}
+
+/* « À faire » : en cours en tête, puis tâches triées, filtrables par objectif, scroll infini. */
+function indicesAfaire() {
+  return tachesCourantes
+    .map((t, i) => i)
+    .filter(i => !objectifFiltre || tachesCourantes[i].sert === objectifFiltre);
+}
+function renderAfaire() {
+  const body = document.getElementById("p-afaire");
+  const chip = objectifFiltre
+    ? `<div class="filtre-chip">🎯 ${escapeHtml(objectifFiltre)}
+         <button onclick="filtrerObjectifReset()">✕ tout afficher</button></div>`
+    : "";
+  const ec = enCoursCourantes
+    .map((t, i) => ({ t, i }))
+    .filter(x => !objectifFiltre || x.t.sert === objectifFiltre);
+  const ecHtml = ec.length
+    ? `<div class="afaire-section"><div class="sous-titre">🟠 En cours (à reprendre)</div>
+         <ul>${ec.map(({ t, i }) => liEnCours(t, i)).join("")}</ul></div>`
+    : "";
+  body.innerHTML = chip + ecHtml + `<div id="afaire-liste"></div>`;
+  afaireMax = AFAIRE_PAGE;
+  renderAfaireListe();
+  // Scroll infini : on révèle plus de tâches en approchant du bas.
+  body.onscroll = () => {
+    if (body.scrollTop + body.clientHeight >= body.scrollHeight - 48) {
+      if (afaireMax < indicesAfaire().length) { afaireMax += AFAIRE_PAGE; renderAfaireListe(); }
+    }
+  };
+}
+function renderAfaireListe() {
+  const cont = document.getElementById("afaire-liste");
+  if (!cont) return;
+  const idx = indicesAfaire();
+  if (!idx.length) {
+    cont.innerHTML = `<div class="vide">${objectifFiltre ? "Aucune tâche pour cet objectif." : "Rien à faire pour l'instant."}</div>`;
+    return;
+  }
+  const reste = idx.length - afaireMax;
+  cont.innerHTML =
+    `<ul>${idx.slice(0, afaireMax).map(i => liTache(tachesCourantes[i], i)).join("")}</ul>` +
+    (reste > 0 ? `<div class="vide load-more">… ${reste} de plus (fais défiler)</div>` : "");
+}
+function liTache(t, i) {
+  const urg = t.urgence === "haute" ? `<span class="pastille" title="urgence haute">!</span>` : "";
+  return `<li>
+    <span class="t-nom">${escapeHtml(t.nom)}${urg}</span>
+    <span class="t-btns">
+      <button class="mini focus" title="Planifier" onclick="planifierTache(${i})">📅</button>
+      <button class="mini done" title="Marquer fait" onclick="marquerFait(${i})">✓</button>
+      <button class="mini supprimer" title="Supprimer" onclick="supprimerTache(${i})">🗑️</button>
+    </span></li>`;
+}
+function liEnCours(t, i) {
+  return `<li>
+    <span class="t-nom">${escapeHtml(t.nom)}</span>
+    <span class="t-btns">
+      <button class="mini focus" title="Reprendre (planifier)" onclick="reprendreTache(${i})">📅</button>
+      <button class="mini done" title="Marquer fait" onclick="marquerFaitEnCours(${i})">✓</button>
+    </span></li>`;
+}
+function filtrerObjectif(i) {
+  const nom = objectifsCourants[i].nom;
+  objectifFiltre = objectifFiltre === nom ? null : nom;
+  renderObjectifs(); renderAfaire();
+}
+function filtrerObjectifReset() { objectifFiltre = null; renderObjectifs(); renderAfaire(); }
+
+/* ================= LE CENTRE = LISTE DE CARTES =================
+   On affiche TOUTES les cartes (liste défilable). Types de carte :
+     - 'review' : occurrence passée non confirmée (créneau OU sortie/rdv) -> 👍 / 👎.
+     - 'prop'   : proposition de Thoth (planifier / créer une tâche, habitude, événement…).
+     - 'create' : carte de création (prompt libre), ouverte par le gros bouton « + ».
+   Chaque carte a SON prompt (sous les boutons) : prompter = parler à Thoth de cette carte.
+   Ordre : les révisions (passé) d'abord. Thoth n'est appelé QUE : au prompt d'une carte,
+   au « + », et automatiquement QUAND il n'y a plus rien à réviser (planification). */
+const FENETRE_MAINTENANT = 10 * 60 * 1000;
+
+let pile = [];   // liste de cartes affichées au centre (révisions, propositions, création).
+
+const estPasseEv = e => {
+  const deb = new Date(e.debut).getTime(); if (isNaN(deb)) return false;
+  const fin = e.fin ? new Date(e.fin).getTime() : deb;
+  return (isNaN(fin) ? deb : fin) < Date.now() - FENETRE_MAINTENANT;
+};
+function plageDe(e) { const h = heureDe(e.debut), hf = heureDe(e.fin); return h ? (hf && hf !== h ? `${h}–${hf}` : h) : ""; }
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+// Date lisible (« hier », « aujourd'hui », sinon jj/mm).
+function jourLisible(iso) {
+  const d = new Date(iso); if (isNaN(d)) return "";
+  const auj = new Date(); auj.setHours(0, 0, 0, 0);
+  const j = new Date(d); j.setHours(0, 0, 0, 0);
+  const dj = Math.round((auj - j) / 86400000);
+  if (dj === 0) return "aujourd'hui";
+  if (dj === 1) return "hier";
+  if (dj > 1) return `il y a ${dj} j`;
+  return `le ${d.getDate()}/${d.getMonth() + 1}`;
+}
+
+// (Re)construit les cartes de RÉVISION depuis l'agenda (occurrences passées non confirmées,
+// créneaux + sorties), de la plus ancienne à la plus récente. Les autres cartes (propositions,
+// création) sont conservées ; les révisions passent devant.
+function reconstruireRevues() {
+  const revues = evenements
+    .filter(e => e.debut && e.statut !== "fait" && estPasseEv(e))
+    .sort((a, b) => new Date(a.debut) - new Date(b.debut))
+    .map(e => ({ type: "review", ev: e }));
+  pile = revues.concat(pile.filter(c => c.type !== "review"));
+}
+
+// Prompt présent sous CHAQUE carte (parler à Thoth de cette carte).
+function promptHtml(i, placeholder) {
+  return `<div class="carte-prompt">
+    <input id="prompt-${i}" placeholder="${placeholder}"
+           onkeydown="if(event.key==='Enter') promptCarte(${i}, this.value)" />
+    <button class="send-btn" onclick="promptCarte(${i}, document.getElementById('prompt-${i}').value)" title="Envoyer">➤</button>
+  </div>`;
+}
+
+// Affiche TOUTE la liste (une carte = un élément à traiter).
+function renderListe() {
+  document.getElementById("message").innerHTML = "";
+  const cartes = document.getElementById("cartes");
+  if (!pile.length) {
+    cartes.innerHTML = `<div class="centre-vide"><span class="big">🦉</span>
+      Tout est clair pour le moment.<br>
+      Clique sur <b>+</b> pour ajouter une tâche, un événement ou une habitude.</div>`;
+    return;
+  }
+  cartes.innerHTML = pile.map((c, i) =>
+    c.type === "review" ? carteRevueHtml(c, i)
+    : c.type === "create" ? carteCreateHtml(i)
+    : carteHtml(c.sugg, i)).join("");
+}
+
+function avancer(i) { pile.splice(i, 1); renderListe(); }
+
+// Recharge état + agenda (gratuit), reconstruit les révisions, ré-affiche, puis — s'il n'y a
+// plus rien à réviser ni à programmer — demande la planification à Thoth. SANS appel inutile.
+async function rafraichir() {
+  await chargerEtat();
+  await chargerAgenda();
+  reconstruireRevues();
+  renderListe();
+  await proposerSiVide();
+}
+
+// Quand il n'y a plus d'occurrence à réviser ni de proposition en attente, Thoth planifie.
+async function proposerSiVide() {
+  const reste = pile.some(c => c.type === "review" || c.type === "prop");
+  if (!reste) await chargerSuggestions();
+}
+
+/* ---------- Carte de RÉVISION (👍 / 👎, puis éventuellement Reprogrammer ?) ---------- */
+function carteRevueHtml(c, i) {
+  const e = c.ev;
+  if (c.etape === "reprog") {
+    return `<div class="carte">
+      <h2>${escapeHtml(e.titre)}</h2>
+      <div class="pourquoi">Pas fait. Tu veux le reprogrammer&nbsp;?</div>
+      <div class="actions">
+        <button class="btn-ok"   onclick="reprogrammer(${i})">📅 Oui, reprogrammer</button>
+        <button class="btn-skip" onclick="avancer(${i})">Non</button>
+      </div></div>`;
+  }
+  const quand = cap([jourLisible(e.debut), plageDe(e)].filter(Boolean).join(" "));
+  const q = e.type === "sortie" ? "tu y es allé" : "tu l'as fait";
+  let boutons;
+  if (e.type === "sortie") {                 // un rdv : on y est allé ou pas (pas de « commencé »)
+    boutons =
+      `<button class="btn-ok"   onclick="revue(${i}, 'fait')">👍 J'y suis allé</button>` +
+      `<button class="btn-skip" onclick="revue(${i}, 'pas_fait')">👎 Non</button>`;
+  } else if (e.type === "tache") {           // une tâche : Fait / Commencé (-> en cours) / Pas fait
+    boutons =
+      `<button class="btn-ok"   onclick="revue(${i}, 'fait')">✅ Fait</button>` +
+      `<button class="btn-adj"  onclick="revue(${i}, 'commence')">🔶 Commencé</button>` +
+      `<button class="btn-skip" onclick="revue(${i}, 'pas_fait')">👎 Pas fait</button>`;
+  } else {                                   // habitude / activité : Fait / Pas fait
+    boutons =
+      `<button class="btn-ok"   onclick="revue(${i}, 'fait')">👍 Fait</button>` +
+      `<button class="btn-skip" onclick="revue(${i}, 'pas_fait')">👎 Pas fait</button>`;
+  }
+  return `<div class="carte">
+    <h2>${escapeHtml(e.titre)}</h2>
+    ${quand ? `<div class="quand">${quand}</div>` : ""}
+    <div class="pourquoi">${q}&nbsp;?</div>
+    <div class="actions">${boutons}</div>
+    ${promptHtml(i, "dis à Thoth de la modifier… (ex : décale à mardi 18h)")}
+  </div>`;
+}
+
+async function reviser(e, resultat) {
+  await api("/valider", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titre: e.titre, pourquoi: "", actions: [
+      { type: "reviser_creneau", cible_id: e.id, kind: e.kind, resultat },
+    ] }),
+  });
+}
+async function revue(i, resultat) {
+  const e = pile[i].ev;
+  await reviser(e, resultat);
+  if (resultat === "fait") { toast("✔️ « " + e.titre + " » — bravo !"); await rafraichir(); }
+  else if (resultat === "commence") { toast("↪ « " + e.titre + " » en cours — à reprendre"); await rafraichir(); }
+  else { pile[i].etape = "reprog"; renderListe(); chargerEtat(); }   // pas fait -> on propose de reprogrammer
+}
+function reprogrammer(i) {
+  const e = pile[i].ev;
+  pile.splice(i, 1); renderListe();
+  demanderThoth(`Reprogramme « ${e.titre} » à un NOUVEAU créneau dans le futur proche, jamais une heure déjà passée. Une seule suggestion, avec une action planifier datée.`, true);
+}
+
+// Prompt d'une carte : on parle à Thoth DE cette carte.
+function promptCarte(i, texte) {
+  const msg = (texte || "").trim(); if (!msg) return;
+  const c = pile[i];
+  if (c.type === "prop") return ajuster(i, msg);                 // modifier la proposition en place
+  if (c.type === "create") return creer(i, msg);                 // créer ce qui est décrit
+  const e = c.ev;                                                // review : on demande à Thoth
+  demanderThoth(`À propos de « ${e.titre} » (${jourLisible(e.debut)}) : ${msg}`, true);
+}
+
+/* ---------- Carte de CRÉATION (prompt libre, ouverte par le « + ») ---------- */
+function carteCreateHtml(i) {
+  return `<div class="carte">
+    <h2>➕ Ajouter</h2>
+    <div class="pourquoi">Décris ce que tu veux ajouter : une tâche, un événement ou une habitude.</div>
+    <div class="carte-prompt">
+      <input id="prompt-${i}" placeholder="ex : acheter du pain demain 18h · tennis 3×/semaine"
+             onkeydown="if(event.key==='Enter') creer(${i}, this.value)" />
+      <button class="send-btn" onclick="creer(${i}, document.getElementById('prompt-${i}').value)" title="Créer">➤</button>
+    </div>
+    <div class="actions"><button class="btn-skip" onclick="avancer(${i})">Annuler</button></div>
+  </div>`;
+}
+async function creer(i, texte) {
+  const msg = (texte || "").trim(); if (!msg) return;
+  pile.splice(i, 1); renderListe();   // ferme la carte de création
+  await demanderThoth(`Je veux ajouter ceci : « ${msg} ». Crée l'élément adéquat (tâche, événement/sortie ou habitude), une seule suggestion prête à valider.`, true);
+}
+// Gros bouton « + » : ouvre une carte de création en haut de la liste.
+function ouvrirCreation() {
+  if (!pile.some(c => c.type === "create")) pile.unshift({ type: "create" });
+  renderListe();
+  const el = document.getElementById("prompt-0"); if (el) el.focus();
+}
+
+/* ---------- Appels à Thoth (ajoutent des cartes 'prop' à la liste) ---------- */
+// Garde-fou anti-doublon : une proposition de PLANIFIER quelque chose qui a déjà un créneau
+// à venir est ignorée (sinon Thoth repropose une tâche/sortie déjà planifiée). On épargne les
+// habitudes (elles peuvent avoir plusieurs séances à venir).
+const STOPWORDS_DOUBLON = new Set([
+  "a", "au", "aux", "avec", "ce", "ces", "cette", "cet", "dans", "de", "des", "du", "d",
+  "en", "et", "je", "la", "le", "les", "leur", "ma", "mes", "mon", "me", "moi", "ou",
+  "par", "pas", "pour", "sur", "ta", "te", "tes", "ton", "tu", "un", "une", "vos", "votre",
+]);
+function normaliserTexteDoublon(s) {
+  return String(s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+function signaturesDoublon(s) {
+  return Array.from(new Set(
+    normaliserTexteDoublon(s)
+      .split(/\s+/)
+      .filter(w => w.length >= 3 && !STOPWORDS_DOUBLON.has(w))
+      .map(w => (w.length <= 6 ? w : w.slice(0, 6)))
+  ));
+}
+function scoreSimilariteDoublon(a, b) {
+  const A = signaturesDoublon(a), B = signaturesDoublon(b);
+  if (!A.length || !B.length) return 0;
+  const bs = new Set(B);
+  const communs = A.filter(x => bs.has(x)).length;
+  return communs / Math.max(A.length, B.length);
+}
+function suggestionDebut(s) {
+  const a = (s.actions || []).find(x => x.type === "planifier" || x.type === "creer_sortie");
+  return a && a.debut ? String(a.debut).slice(0, 16) : "";
+}
+function memeOccasionPlanifiee(s, e) {
+  const noms = [cibleNom(s), s.titre].filter(Boolean);
+  const titres = [e.titre].filter(Boolean);
+  const debutS = suggestionDebut(s);
+  const debutE = String(e.debut || "").slice(0, 16);
+  return noms.some(nom => titres.some(titre => {
+    const a = normaliserTexteDoublon(nom);
+    const b = normaliserTexteDoublon(titre);
+    if (!a || !b) return false;
+    if (a === b || a.includes(b) || b.includes(a)) return true;
+    const score = scoreSimilariteDoublon(a, b);
+    return score >= 0.72 || (!!debutS && debutS === debutE && score >= 0.34);
+  }));
+}
+function dejaPlanifie(s) {
+  const planif = aType(s, "planifier") || aType(s, "creer_sortie");
+  if (!planif) return false;
+  const nom = cibleNom(s);
+  if (!nom || estHabitude(nom)) return false;
+  return evenements.some(e => e.statut === "a_venir" && memeOccasionPlanifiee(s, e));
+}
+function ajouterPropositions(data, prepend) {
+  const cards = (data.suggestions || [])
+    .filter(s => !dejaPlanifie(s))
+    .map(s => ({ type: "prop", sugg: s }));
+  pile = prepend ? cards.concat(pile) : pile.concat(cards);
+  renderListe();
+}
+async function demanderThoth(message, prepend) {
+  frameLoading(true);
+  try {
+    const data = await (await api("/chat", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }),
+    })).json();
+    await chargerSolde();
+    ajouterPropositions(data, prepend);
+    if (data.message) toast(data.message);
+  } catch (e) { renderListe(); } finally { frameLoading(false); }
+}
+
+// Aides pour classer une suggestion et choisir les bons verbes.
+function cibleNom(s) { const a = (s.actions || []).find(x => x.nom); return a ? a.nom : s.titre; }
+function aType(s, t) { return (s.actions || []).some(a => a.type === t); }
+function tacheEnRetard(nom) { const t = tachesCourantes.find(t => t.nom === nom); return !!(t && t.en_retard); }
+function estEnCours(nom) { return enCoursCourantes.some(t => t.nom === nom); }
+function estHabitude(nom) { return habitudesCourantes.some(h => h.nom === nom); }
+// Une suggestion porte-t-elle sur une TÂCHE concrète (pas un objectif/habitude/sortie/personne) ?
+function estTacheSugg(s) {
+  const nom = cibleNom(s);
+  const concept = aType(s, "creer_objectif") || aType(s, "creer_habitude") || aType(s, "ajouter_personne");
+  return (aType(s, "creer_tache") || aType(s, "marquer_fait") || (aType(s, "planifier") && !estHabitude(nom)))
+         && !concept && !aType(s, "creer_sortie");
+}
+
+// HTML d'UNE carte de PROPOSITION (dans la liste). Les boutons agissent sur pile[i].
+function carteHtml(s, i) {
+  const tags = (s.actions || []).map(a => `<span class="tag">${LABELS_ACTION[a.type] || a.type}</span>`).join("");
+  const nom = cibleNom(s);
+  const aPlanifier = aType(s, "planifier") || aType(s, "creer_sortie");
+  const estTache = estTacheSugg(s);   // tâche concrète qu'on peut « faire / cocher »
+
+  let boutons;
+  if (estTache) {
+    const label = (tacheEnRetard(nom) || estEnCours(nom)) ? "✓ Fait" : "✅ Faire maintenant";
+    boutons =
+      `<button class="btn-ok" onclick="faire(${i})">${label}</button>` +
+      (aPlanifier ? `<button class="btn-plan" onclick="planifier(${i})">📅 Planifier</button>` : "");
+  } else {
+    boutons = `<button class="btn-ok" onclick="validerCarte(${i})">${aPlanifier ? "📅 Planifier" : "✅ Valider"}</button>`;
+  }
+
+  return `<div class="carte">
+    <h2>${escapeHtml(s.titre)}</h2>
+    ${s.quand ? `<div class="quand">${escapeHtml(s.quand)}</div>` : ""}
+    <div class="pourquoi">${escapeHtml(s.pourquoi || "")}</div>
+    <div class="tags">${tags}</div>
+    <div class="actions">
+      ${boutons}
+      <button class="btn-skip" onclick="plusTard(${i})">🕒 Plus tard</button>
+    </div>
+    ${promptHtml(i, "ajuster avec Thoth… (ex : plutôt ce week-end)")}
+  </div>`;
+}
+
+// Applique des actions sur la proposition i, la retire de la liste, puis resynchronise.
+async function appliquer(i, actions, msg) {
+  const s = pile[i].sugg;
+  await api("/valider", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titre: s.titre, pourquoi: "", actions }),
+  });
+  toast(msg);
+  pile.splice(i, 1);
+  await rafraichir();
+}
+
+// « Faire maintenant / Fait » : crée la tâche si besoin puis la marque faite — JAMAIS de créneau.
+async function faire(i) {
+  const s = pile[i].sugg, nom = cibleNom(s);
+  const actions = (s.actions || []).filter(a => a.type === "creer_tache");
+  if (!actions.length && !tacheEnRetard(nom) && !tachesCourantes.some(t => t.nom === nom) && !estEnCours(nom))
+    actions.push({ type: "creer_tache", nom });
+  actions.push({ type: "marquer_fait", nom });
+  await appliquer(i, actions, "✔️ « " + nom + " » faite");
+}
+
+// « Planifier » : applique les actions de planification (sans marquer fait) -> calendrier.
+async function planifier(i) {
+  const s = pile[i].sugg;
+  const actions = (s.actions || []).filter(a => a.type !== "marquer_fait" && a.type !== "noter_progres");
+  await appliquer(i, actions, "📅 « " + cibleNom(s) + " » planifié");
+}
+
+// Objectif / habitude / sortie / personne : on applique la suggestion telle quelle.
+async function validerCarte(i) {
+  const s = pile[i].sugg;
+  const d = await (await api("/valider", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s),
+  })).json();
+  toast("✓ " + (d.appliquees || []).join(" · "));
+  pile.splice(i, 1);
+  await rafraichir();
+}
+
+// « Plus tard » : pour une TÂCHE encore inconnue, on la STOCKE SANS la dater (réserve) ;
+// sinon on écarte la proposition (et on évite de la reproposer à l'identique).
+async function plusTard(i) {
+  const s = pile[i].sugg, nom = cibleNom(s);
+  const dejaListe = tacheEnRetard(nom) || estEnCours(nom) || tachesCourantes.some(t => t.nom === nom);
+  if (estTacheSugg(s) && !dejaListe) {
+    const actions = (s.actions || []).filter(a => a.type === "creer_tache");
+    if (!actions.length) actions.push({ type: "creer_tache", nom });
+    await appliquer(i, actions, "🕒 « " + nom + " » gardée pour plus tard");
+    return;
+  }
+  if (s.titre && !reportes.includes(s.titre)) reportes.push(s.titre);
+  avancer(i);
+}
+
+// Ajuster la proposition i (prompt de la carte) : on remplace seulement sa carte.
+async function ajuster(i, texte) {
+  const msg = (texte || "").trim();
+  if (!msg) return;
+  frameLoading(true);
+  try {
+    const data = await (await api("/ajuster", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ suggestion: pile[i].sugg, message: msg }),
+    })).json();
+    const nouv = (data.suggestions || [])[0];
+    if (!nouv) { toast("Rien à ajuster"); return; }
+    pile[i].sugg = nouv;
+    renderListe();
+    toast("✏️ suggestion ajustée");
+    await chargerSolde();
+  } finally { frameLoading(false); }
+}
+
+// Planification proactive : appelée quand il n'y a plus rien à réviser (et à l'ouverture).
+async function chargerSuggestions() {
+  frameLoading(true);
+  try {
+    const data = await (await api("/suggestions", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ exclure: reportes }),
+    })).json();
+    ajouterPropositions(data, false);
+    await chargerSolde();
+  } catch (e) {
+    renderListe();   // crédits épuisés / erreur : on affiche quand même la liste
+  } finally { frameLoading(false); }
+}
+
+// Utilisé par les boutons des colonnes latérales : une idée -> carte de Thoth au sommet.
+async function envoyerClarif(texte) {
+  if (!texte) return;
+  await demanderThoth(texte, true);
+}
+
+/* ---------- Marquer fait (sans timer) ---------- */
+async function marquerFait(i) {
+  const nom = tachesCourantes[i].nom;
+  await api("/valider", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titre: nom, pourquoi: "", actions: [{ type: "marquer_fait", nom }] }),
+  });
+  toast("✔️ « " + nom + " » faite");
+  rafraichir();   // un créneau futur de cette tâche peut bouger -> on resync
+}
+
+/* ---------- Planifier une tâche (délègue au LLM, qui propose un créneau futur) ---------- */
+function planifierTache(i) {
+  const nom = tachesCourantes[i].nom;
+  envoyerClarif(`Trouve un créneau concret dans le futur proche pour ma tâche « ${nom} ». Propose une seule suggestion avec une action planifier datée.`);
+}
+
+/* ---------- Tâches en cours (entamées, à reprendre) ---------- */
+function reprendreTache(i) {
+  const nom = enCoursCourantes[i].nom;
+  envoyerClarif(`Replanifie ma tâche en cours « ${nom} » à un nouveau créneau dans le futur proche pour la reprendre. Une seule suggestion, avec une action planifier datée.`);
+}
+
+async function marquerFaitEnCours(i) {
+  const nom = enCoursCourantes[i].nom;
+  await api("/valider", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titre: nom, pourquoi: "", actions: [{ type: "marquer_fait", nom }] }),
+  });
+  toast("✔️ « " + nom + " » faite");
+  rafraichir();   // la section « En cours » du tableau de bord se met à jour
+}
+
+/* ---------- Supprimer une tâche ---------- */
+async function supprimerTache(i) {
+  const nom = tachesCourantes[i].nom;
+  if (!confirm(`Supprimer « ${nom} » ?`)) return;
+  await api("/valider", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titre: nom, pourquoi: "", actions: [{ type: "supprimer_tache", nom }] }),
+  });
+  toast("🗑️ « " + nom + " » supprimée");
+  rafraichir();   // la tâche et ses créneaux disparaissent aussi du tableau de bord
+}
+
+/* ---------- Objectifs ---------- */
+function avancerObjectif(i) {
+  const nom = objectifsCourants[i].nom;
+  envoyerClarif(`Quelle est LA prochaine action concrète pour avancer sur mon objectif « ${nom} » ? Propose une seule tâche, simple et faisable bientôt.`);
+}
+
+async function appliquerObjectif(nom, type, emoji, libelle) {
+  await api("/valider", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titre: nom, pourquoi: "", actions: [{ type, nom }] }),
+  });
+  toast(`${emoji} « ${nom} » ${libelle}`);
+  rafraichir();   // atteindre/abandonner supprime des tâches+créneaux liés
+}
+
+function atteindreObjectif(i) {
+  const nom = objectifsCourants[i].nom;
+  if (!confirm(`Marquer « ${nom} » comme atteint ?\nSes tâches non faites seront supprimées.`)) return;
+  appliquerObjectif(nom, "atteindre_objectif", "🏆", "atteint !");
+}
+
+function abandonnerObjectif(i) {
+  const nom = objectifsCourants[i].nom;
+  if (!confirm(`Abandonner « ${nom} » ?\nToutes ses tâches liées seront supprimées.`)) return;
+  appliquerObjectif(nom, "abandonner_objectif", "🚫", "abandonné");
+}
+
+/* ---------- Habitudes ---------- */
+// Régularité déduite des séances planifiées (créneaux). Une séance passée = faite.
+function regularite(seances, frequence) {
+  const now = Date.now();
+  const passees = seances.map(s => new Date(s).getTime()).filter(t => !isNaN(t) && t <= now);
+  const futures = seances.map(s => new Date(s).getTime()).filter(t => !isNaN(t) && t > now);
+  if (futures.length) return { cls: "ok", txt: "✓ prochaine séance prévue" };
+  if (!passees.length) return { cls: "warn", txt: "pas encore planifiée" };
+  const derniere = Math.max(...passees);
+  const jours = Math.floor((now - derniere) / 86400000);
+  const f = (frequence || "").toLowerCase();
+  const freqJours = /jour|quotid/.test(f) ? 1 : /semaine|hebdo/.test(f) ? 7 : /mois/.test(f) ? 30 : null;
+  const ilya = jours === 0 ? "aujourd'hui" : `il y a ${jours} j`;
+  if (freqJours && jours > freqJours) return { cls: "warn", txt: `en retard (dernière séance ${ilya})` };
+  return { cls: "ok", txt: `dernière séance ${ilya}` };
+}
+
+function planifierHabitude(i) {
+  const h = habitudesCourantes[i];
+  envoyerClarif(`Planifie ma prochaine séance de « ${h.nom} » (habitude ${h.frequence}) en tenant compte de ma dernière séance et de la date du jour.`);
+}
+
+async function appliquerHabitude(nom, type, emoji, libelle) {
+  await api("/valider", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titre: nom, pourquoi: "", actions: [{ type, nom }] }),
+  });
+  toast(`${emoji} « ${nom} » ${libelle}`);
+  rafraichir();
+}
+
+function terminerHabitude(i) {
+  const nom = habitudesCourantes[i].nom;
+  if (!confirm(`Terminer l'habitude « ${nom} » ?`)) return;
+  appliquerHabitude(nom, "terminer_habitude", "🏁", "terminée");
+}
+
+function abandonnerHabitude(i) {
+  const nom = habitudesCourantes[i].nom;
+  if (!confirm(`Abandonner l'habitude « ${nom} » ?`)) return;
+  appliquerHabitude(nom, "abandonner_habitude", "🚫", "abandonnée");
+}
+
+
+/* ---------- Calendrier ---------- */
+let calView = "mois";          // "mois" | "semaine"
+let calCursor = null;          // un jour quelconque de la période affichée
+const LANE = 21;               // hauteur d'une « voie » d'étiquette (px)
+const TOP_MOIS = 21, TOP_SEM = 6;  // décalage des barres sous le n° du jour
+
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>"]/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+function dateLocale(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function jourCle(iso) { return String(iso).slice(0, 10); }              // YYYY-MM-DD d'un ISO
+function heureDe(iso) { return String(iso).length > 10 ? String(iso).slice(11, 16) : ""; }
+
+async function chargerAgenda() {
+  evenements = await (await api("/agenda")).json();
+  evenements.forEach((e, i) => { e._i = i; });   // index stable pour les clics
+  if (!calCursor) calCursor = new Date();
+  renderCalendrier();
+}
+function setView(v) {
+  calView = v;
+  document.getElementById("vbtn-mois").classList.toggle("actif", v === "mois");
+  document.getElementById("vbtn-sem").classList.toggle("actif", v === "semaine");
+  renderCalendrier();
+}
+function changerPeriode(d) {
+  if (calView === "mois") calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() + d, 1);
+  else { const n = new Date(calCursor); n.setDate(n.getDate() + 7 * d); calCursor = n; }
+  renderCalendrier();
+}
+function allerAujourdhui() { calCursor = new Date(); renderCalendrier(); }
+
+// Découpe les 7 jours d'une semaine en barres : une par événement qui la chevauche, avec
+// sa colonne de départ, son span et sa voie (lane). Un multi-jours traversant 2 semaines
+// est dupliqué par ligne (un segment par semaine), comme Google Agenda.
+function placerBarres(jours) {
+  const wStart = dateLocale(jours[0]), wEnd = dateLocale(jours[6]);
+  const cleVers = {}; jours.forEach((d, i) => { cleVers[dateLocale(d)] = i; });
+  const items = [];
+  for (const e of evenements) {
+    if (!e.debut) continue;
+    const sd = jourCle(e.debut);
+    let ed = e.fin ? jourCle(e.fin) : sd;
+    if (ed < sd) ed = sd;
+    if (ed < wStart || sd > wEnd) continue;          // hors de cette semaine
+    const cs = sd < wStart ? wStart : sd;            // clip aux bords de la semaine
+    const ce = ed > wEnd ? wEnd : ed;
+    const col = cleVers[cs], span = cleVers[ce] - col + 1;
+    items.push({ e, col, span, multi: ed > sd });
+  }
+  items.sort((a, b) => (b.span - a.span) || (String(a.e.debut) < String(b.e.debut) ? -1 : 1));
+  const lanes = [];
+  for (const it of items) {
+    const fin = it.col + it.span - 1;
+    let l = 0;
+    for (; ; l++) {
+      const occ = lanes[l] || (lanes[l] = []);
+      if (occ.every(([c0, c1]) => fin < c0 || it.col > c1)) { occ.push([it.col, fin]); break; }
+    }
+    it.lane = l;
+  }
+  return items;
+}
+
+function barreHtml(it, topBase) {
+  const e = it.e;
+  const left = (it.col / 7) * 100, width = (it.span / 7) * 100;
+  const top = topBase + it.lane * LANE;
+  const heure = (!it.multi && heureDe(e.debut)) ? heureDe(e.debut) + " " : "";
+  const cls = e.type === "sortie" ? "sortie" : (e.statut || "a_venir");
+  return `<div class="cal-bar ${cls}" data-lane="${it.lane}" data-col="${it.col}" data-span="${it.span}"
+       style="left:calc(${left}% + 3px);width:calc(${width}% - 6px);top:${top}px"
+       title="${escapeHtml(heure + e.titre)}" onclick="ouvrirEditEvent(${e._i})">
+    <span class="bar-txt">${escapeHtml(heure + e.titre)}</span>
+    <span class="bar-actions">
+      <button onclick="event.stopPropagation();ouvrirEditEvent(${e._i})" title="Modifier">✏️</button>
+      <button onclick="event.stopPropagation();supprimerEvent(${e._i})" title="Supprimer">🗑️</button>
+    </span>
+  </div>`;
+}
+
+function joursDeSemaine(ref) {
+  const off = (ref.getDay() + 6) % 7;                // lundi = 0
+  const start = new Date(ref); start.setDate(ref.getDate() - off);
+  return Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
+}
+
+function renderCalendrier() {
+  const ajd = dateLocale(new Date());
+  if (calView === "mois") renderMois(ajd); else renderSemaine(ajd);
+}
+
+function renderMois(ajd) {
+  const Y = calCursor.getFullYear(), M = calCursor.getMonth();
+  document.getElementById("cal-titre").textContent = `${MOIS[M]} ${Y}`;
+  document.getElementById("cal-head").innerHTML =
+    JOURS.map(j => `<div class="cal-th">${j}</div>`).join("");
+
+  const first = new Date(Y, M, 1);
+  const off = (first.getDay() + 6) % 7;
+  const start = new Date(Y, M, 1 - off);
+  const nbJours = new Date(Y, M + 1, 0).getDate();
+  const nbSem = Math.ceil((off + nbJours) / 7);
+
+  let html = "";
+  for (let w = 0; w < nbSem; w++) {
+    const jours = Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + w * 7 + i); return d; });
+    let cells = "";
+    for (const d of jours) {
+      const key = dateLocale(d);
+      const cls = (key === ajd ? "ajd " : "") + (d.getMonth() === M ? "" : "hors");
+      cells += `<div class="cal-day ${cls}"><div class="cal-num">${d.getDate()}</div></div>`;
+    }
+    const bars = placerBarres(jours).map(it => barreHtml(it, TOP_MOIS)).join("");
+    html += `<div class="cal-week">${cells}<div class="cal-bars">${bars}</div></div>`;
+  }
+  document.getElementById("cal-body").innerHTML = html;
+  reflowMois();
+}
+
+function reflowMois() {
+  document.querySelectorAll("#cal-body .cal-week").forEach(wk => {
+    const cap = Math.max(1, Math.floor((wk.clientHeight - TOP_MOIS - 2) / LANE));
+    const overflow = {};
+    wk.querySelectorAll(".cal-bar").forEach(b => {
+      if (+b.dataset.lane >= cap) {
+        b.style.display = "none";
+        const col = +b.dataset.col, span = +b.dataset.span;
+        for (let c = col; c < col + span; c++) overflow[c] = (overflow[c] || 0) + 1;
+      }
+    });
+    const days = wk.querySelectorAll(".cal-day");
+    for (const [c, n] of Object.entries(overflow)) {
+      const d = days[+c];
+      if (d) { const m = document.createElement("div"); m.className = "cal-more"; m.textContent = `+${n}`; d.appendChild(m); }
+    }
+  });
+}
+
+function renderSemaine(ajd) {
+  const jours = joursDeSemaine(calCursor);
+  const a = jours[0], b = jours[6];
+  const titre = a.getMonth() === b.getMonth()
+    ? `${a.getDate()}–${b.getDate()} ${MOIS[a.getMonth()]} ${a.getFullYear()}`
+    : `${a.getDate()} ${MOIS[a.getMonth()]} – ${b.getDate()} ${MOIS[b.getMonth()]} ${b.getFullYear()}`;
+  document.getElementById("cal-titre").textContent = titre;
+  document.getElementById("cal-head").innerHTML =
+    jours.map(d => `<div class="cal-th ${dateLocale(d) === ajd ? "ajd" : ""}">${JOURS[(d.getDay()+6)%7]} ${d.getDate()}</div>`).join("");
+
+  const items = placerBarres(jours);
+  const bars = items.map(it => barreHtml(it, TOP_SEM)).join("");
+  const hauteur = TOP_SEM + (items.reduce((m, it) => Math.max(m, it.lane), -1) + 1) * LANE + 8;
+  let cells = "";
+  for (const d of jours)
+    cells += `<div class="cal-day ${dateLocale(d) === ajd ? "ajd" : ""}" style="min-height:${hauteur}px"></div>`;
+  document.getElementById("cal-body").innerHTML =
+    `<div class="cal-week semaine">${cells}` +
+    `<div class="cal-bars" style="inset:auto;top:0;left:0;right:0;height:${hauteur}px">${bars}</div></div>`;
+}
+
+/* ---------- Édition d'un événement de l'agenda ---------- */
+let editIndex = null;
+
+function toInput(iso) {
+  if (!iso) return "";
+  const s = String(iso);
+  return s.length <= 10 ? s + "T00:00" : s.slice(0, 16);
+}
+function depuisInput(v) {
+  if (!v) return null;
+  return v.endsWith("T00:00") ? v.slice(0, 10) : v;
+}
+function ouvrirEditEvent(i) {
+  editIndex = i;
+  const e = evenements[i];
+  document.getElementById("ev-titre").value = e.titre || "";
+  document.getElementById("ev-debut").value = toInput(e.debut);
+  document.getElementById("ev-fin").value = toInput(e.fin || e.debut);
+  document.getElementById("ev-overlay").classList.add("open");
+}
+function fermerEditEvent() { document.getElementById("ev-overlay").classList.remove("open"); editIndex = null; }
+
+async function enregistrerEvent() {
+  if (editIndex == null) return;
+  const e = evenements[editIndex];
+  const titre = document.getElementById("ev-titre").value.trim();
+  const debut = depuisInput(document.getElementById("ev-debut").value);
+  const fin = depuisInput(document.getElementById("ev-fin").value);
+  await api("/valider", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      titre: titre || e.titre, pourquoi: "",
+      actions: [{ type: "modifier_evenement", cible_id: e.id, kind: e.kind, nom: titre || e.titre, debut, fin }],
+    }),
+  });
+  toast("✏️ événement modifié");
+  fermerEditEvent();
+  chargerAgenda();
+}
+async function supprimerEvent(i) {
+  const e = evenements[i];
+  if (!confirm(`Supprimer « ${e.titre} » ?`)) return;
+  await api("/valider", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titre: e.titre, pourquoi: "", actions: [{ type: "supprimer_evenement", cible_id: e.id, kind: e.kind }] }),
+  });
+  toast("🗑️ événement supprimé");
+  chargerAgenda();
+}
+function supprimerEventCourant() { const i = editIndex; fermerEditEvent(); supprimerEvent(i); }
+
+// Re-rendu du mois si la fenêtre change de taille (capacité des cases recalculée).
+window.addEventListener("resize", () => {
+  if (!document.getElementById("vue-agenda").classList.contains("hidden") && calView === "mois") renderCalendrier();
+});
+
+/* ---------- Démarrage ---------- */
+// L'app ne démarre QUE lorsque l'utilisateur est authentifié (voir onAuthStateChanged).
+async function demarrer() {
+  gererRetourCheckout();
+  await chargerOffresCredits();
+  await chargerEtat();
+  await chargerAgenda();        // alimente les cartes de révision (occurrences passées)
+  reconstruireRevues();         // liste = cartes « tu l'as fait ? »
+  renderListe();                // affichage immédiat (gratuit)
+  const credits = await chargerSolde({ ouvrirPopupSiVide: true });
+  if (credits > 0) await proposerSiVide();       // si rien à réviser -> Thoth propose la planification
+  if (location.hash === "#agenda") ouvrirVue("agenda");  // deep-link direct vers l'agenda
+}
+</script>
+</body>
+</html>

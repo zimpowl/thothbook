@@ -1,0 +1,14 @@
+# Ne JAMAIS copier les secrets ni le superflu dans l'image.
+.env
+*.json.key
+firebase-service-account*.json
+.git
+.gitignore
+.idea
+.venv
+venv
+__pycache__
+**/__pycache__
+*.pyc
+src/*.egg-info
+.claude

@@ -1,0 +1,68 @@
+# Configuration de « Le Cadre »
+# Modifie ces valeurs sans toucher au code.
+
+neo4j:
+  # Local : bolt://localhost:7687
+  # Cloud (Aura) : neo4j+s://xxxxx.databases.neo4j.io  (le +s = connexion chiffrée)
+  uri: neo4j+s://84fd77f4.databases.neo4j.io
+  user: neo4j
+  # Le mot de passe vient du fichier .env (variable NEO4J_PASSWORD)
+
+llm:
+  # provider : "google_genai" (Gemini) ou "openai"
+  provider: google_genai
+  # model : "gemini-2.0-flash" pour Gemini, "gpt-4o-mini" ou "gpt-4o" pour OpenAI
+  model: gemini-3.1-flash-lite
+  temperature: 0
+
+# Crédits : solde entier (sans décimales).
+credits:
+  # 1 € payé = 100 crédits de base. Les packs peuvent ensuite ajouter un bonus.
+  par_euro: 100
+  # Nouveau compte : 0 pour forcer une vraie recharge avant usage IA.
+  offert_inscription: 5
+  # Débit minimum par appel LLM (même pour un très petit prompt) : positionnement premium.
+  debit_minimum: 25
+  packs:
+    - id: atelier
+      label: Pack Atelier
+      description: Entrée premium pour utiliser Thoth sérieusement.
+      prix_eur: 19
+      credits: 1900
+      bonus_credits: 0
+      badge: Départ
+      ordre: 1
+    - id: studio
+      label: Pack Studio
+      description: Le meilleur compromis, avec un vrai bonus de recharge.
+      prix_eur: 49
+      credits: 4900
+      bonus_credits: 1400
+      badge: Bonus
+      ordre: 2
+    - id: maison
+      label: Pack Maison
+      description: Gros volume avec un bonus encore plus généreux.
+      prix_eur: 99
+      credits: 9900
+      bonus_credits: 4100
+      badge: Grosse recharge
+      ordre: 3
+
+paiements:
+  devise: eur
+
+# Tarification du paiement à l'usage.
+#   - prix par MILLION de tokens (en euros), à RENSEIGNER avec les vrais tarifs du provider
+#     (ce sont des valeurs d'exemple — vérifie la grille de prix officielle de ton modèle).
+#   - marge : multiplicateur appliqué au coût réel avant conversion en crédits.
+#     Ici elle est volontairement très haute pour un positionnement assumé « premium ».
+tarifs:
+  marge: 600.0
+  defaut:
+    input_par_million: 0.10
+    output_par_million: 0.40
+  modeles:
+    gemini-3.1-flash-lite:
+      input_par_million: 0.10
+      output_par_million: 0.40

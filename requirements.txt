@@ -1,0 +1,12 @@
+neo4j>=5.20
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langchain-google-genai>=2.0.0
+python-dotenv>=1.0
+pyyaml>=6.0
+pydantic>=2.5
+rich>=13.7
+fastapi>=0.110
+uvicorn>=0.29
+firebase-admin>=6.5
+stripe>=10.12
