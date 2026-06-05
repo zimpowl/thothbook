@@ -1,12 +1,12 @@
-# Le Cadre
+# Thothbook
 
-Assistant d'organisation personnelle. Le Cadre connaît ta vie (objectifs, tâches,
+Assistant d'organisation personnelle. Thothbook connaît ta vie (objectifs, tâches,
 habitudes, amis, état) stockée dans un **graphe Neo4j**, et te **suggère quoi faire
 et quand**. Tu **valides** ses suggestions (elles s'écrivent dans le graphe) ou tu
 **clarifies** (il re-suggère).
 
 ```
-Tu écris  →  Le Cadre lit ton graphe  →  propose des suggestions
+Tu écris  →  Thothbook lit ton graphe  →  propose des suggestions
                                               ↓
                         « ok » → écrit dans le graphe   |   clarification → re-suggère
 ```
@@ -42,7 +42,7 @@ Recommandation : **Aura pour démarrer vite**, **local si la confidentialité de
 ## 2. Installer le projet
 
 ```bash
-cd "theframe"
+cd "thothbook"
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .            # installe les dépendances + le package
@@ -66,18 +66,18 @@ llm:
 ## 4. (Optionnel) Charger un exemple de vie
 
 ```bash
-python -m le_cadre --seed
+python -m thothbook --seed
 ```
 Charge quelques objectifs/tâches/amis pour avoir de quoi tester tout de suite.
 
 ## 5. L'app web (recommandé — sans prompter) 🪄
 
 ```bash
-python -m le_cadre --web
+python -m thothbook --web
 ```
 Puis ouvre **http://localhost:8000** dans ton navigateur.
 
-À l'ouverture, Le Cadre lit ton graphe et **propose tout seul** des actions, sous forme
+À l'ouverture, Thothbook lit ton graphe et **propose tout seul** des actions, sous forme
 de cartes. Sur chaque carte :
 - **✅ Valider** → écrit l'action dans le graphe (Aura)
 - **✏️ Ajuster** → tu précises en une phrase, il re-propose
@@ -111,7 +111,7 @@ dupliquée d'une semaine à l'autre). Au survol d'un événement, deux pictos : 
 ## 5 bis. Discuter en terminal (mode dev)
 
 ```bash
-python -m le_cadre
+python -m thothbook
 ```
 
 Exemples de ce que tu peux écrire :
@@ -120,7 +120,7 @@ Exemples de ce que tu peux écrire :
 - « Est-ce une bonne idée de voir Paul vendredi soir ? »
 - « Je suis crevé cette semaine. »
 
-Le Cadre répond avec des suggestions numérotées. Tu réponds :
+Thothbook répond avec des suggestions numérotées. Tu réponds :
 - **`ok`** → il écrit toutes les suggestions dans le graphe
 - **`1,3`** → il n'écrit que les suggestions 1 et 3
 - **une phrase** → c'est une clarification, il re-suggère
@@ -151,14 +151,14 @@ MATCH (x)-[:PLANIFIE_A]->(c:Creneau) RETURN x.nom, c.debut, c.fin ORDER BY c.deb
 ## Structure du projet
 
 ```
-src/le_cadre/
+src/thothbook/
   config.py    # charge config.yaml + .env
   schemas.py   # structure des suggestions/actions (Pydantic)
   graphe.py    # Neo4j : lecture du contexte + écriture des actions
   llm.py       # modèle LLM paramétrable (OpenAI / Gemini)
   conseil.py   # contexte + message → suggestions
   cli.py       # boucle conversationnelle (terminal)
-  __main__.py  # python -m le_cadre [--seed]
+  __main__.py  # python -m thothbook [--seed]
 data/seed.cypher
 config.yaml · .env (à créer)
 ```

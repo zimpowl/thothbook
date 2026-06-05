@@ -1,11 +1,11 @@
-# Configuration de « Le Cadre »
+# Configuration de « Thothbook »
 # Modifie ces valeurs sans toucher au code.
 
 neo4j:
   # Local : bolt://localhost:7687
   # Cloud (Aura) : neo4j+s://xxxxx.databases.neo4j.io  (le +s = connexion chiffrée)
-  uri: neo4j+s://84fd77f4.databases.neo4j.io
-  user: neo4j
+  uri: neo4j+s://cd5df830.databases.neo4j.io
+  user: cd5df830
   # Le mot de passe vient du fichier .env (variable NEO4J_PASSWORD)
 
 llm:
@@ -20,7 +20,7 @@ credits:
   # 1 € payé = 100 crédits de base. Les packs peuvent ensuite ajouter un bonus.
   par_euro: 100
   # Nouveau compte : 0 pour forcer une vraie recharge avant usage IA.
-  offert_inscription: 5
+  offert_inscription: 100
   # Débit minimum par appel LLM (même pour un très petit prompt) : positionnement premium.
   debit_minimum: 25
   packs:

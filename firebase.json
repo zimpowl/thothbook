@@ -10,7 +10,7 @@
       {
         "source": "/api/**",
         "run": {
-          "serviceId": "le-cadre",
+          "serviceId": "thothbook",
           "region": "europe-west1"
         }
       },
@@ -21,3 +21,4 @@
     ]
   }
 }
+

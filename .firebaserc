@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "thothbook"
+    "default": "thothbook-app"
   }
 }
+

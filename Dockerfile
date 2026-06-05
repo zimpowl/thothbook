@@ -1,4 +1,4 @@
-# Backend FastAPI de « Le Cadre » pour Google Cloud Run.
+# Backend FastAPI de « Thothbook » pour Google Cloud Run.
 # Cloud Run fournit le port à écouter via la variable d'env $PORT (8080 par défaut).
 FROM python:3.12-slim
 

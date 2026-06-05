@@ -15,3 +15,7 @@ google-cloud-sdk
 .idea
 .firebase
 .claude
+
+/secrets
+__pycache__
+.DS_Store

@@ -1,4 +1,4 @@
-# Déploiement de « Le Cadre »
+# Déploiement de « Thothbook »
 
 Architecture : **frontend statique** (`web/index.html`) sur **Firebase Hosting**,
 **backend FastAPI** (Python) sur **Google Cloud Run**. Firebase Hosting redirige
@@ -35,23 +35,71 @@ ajoute une **application Web** → copie l'objet `firebaseConfig`.
 Colle ces valeurs dans `web/index.html` (bloc `const firebaseConfig = {…}`, en haut du script,
 balisé `⚠️ REMPLACE ces valeurs`). Ces clés sont **publiques** par nature (pas un secret).
 
-## 3. Déployer le backend sur Cloud Run
+## 3. Mettre à jour les API keys (Secret Manager)
 
-Le backend a besoin de ces variables d'environnement (secrets) sur Cloud Run :
-`NEO4J_PASSWORD`, la clé LLM (`GOOGLE_API_KEY` pour Gemini, ou `OPENAI_API_KEY`),
-`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, et `APP_BASE_URL` (URL publique du front, ex `https://thothbook.web.app`).
+Commence par fixer l'ID du projet une fois pour toute la session :
+
+```bash
+PROJECT_ID="thothbook-app"
+```
+
+> Si `gcloud` n'est pas dans le PATH, remplace `gcloud` par `./google-cloud-sdk/bin/gcloud`
+> dans les commandes ci-dessous (depuis la racine du repo).
+
+Créer les secrets (commande idempotente avec `|| true`) :
+
+```bash
+gcloud secrets create NEO4J_PASSWORD --replication-policy="automatic" --project "$PROJECT_ID" || true
+gcloud secrets create GOOGLE_API_KEY --replication-policy="automatic" --project "$PROJECT_ID" || true
+gcloud secrets create STRIPE_SECRET_KEY --replication-policy="automatic" --project "$PROJECT_ID" || true
+gcloud secrets create STRIPE_WEBHOOK_SECRET --replication-policy="automatic" --project "$PROJECT_ID" || true
+```
+
+Ajouter une nouvelle version (rotation) :
+
+```bash
+printf "%s" "NOUVEAU_NEO4J_PASSWORD" | gcloud secrets versions add NEO4J_PASSWORD --data-file=- --project "$PROJECT_ID"
+printf "%s" "NOUVELLE_GOOGLE_API_KEY" | gcloud secrets versions add GOOGLE_API_KEY --data-file=- --project "$PROJECT_ID"
+printf "%s" "NOUVELLE_STRIPE_SECRET_KEY" | gcloud secrets versions add STRIPE_SECRET_KEY --data-file=- --project "$PROJECT_ID"
+printf "%s" "NOUVEAU_STRIPE_WEBHOOK_SECRET" | gcloud secrets versions add STRIPE_WEBHOOK_SECRET --data-file=- --project "$PROJECT_ID"
+```
+
+Donner au service runtime Cloud Run le droit de lire les secrets :
+
+```bash
+PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')"
+RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:${RUNTIME_SA}" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
+## 4. Déployer le backend sur Cloud Run
+
+Le backend a besoin de ces variables : `APP_BASE_URL` + secrets (`NEO4J_PASSWORD`,
+`GOOGLE_API_KEY` pour Gemini ou `OPENAI_API_KEY`, `STRIPE_SECRET_KEY`,
+`STRIPE_WEBHOOK_SECRET`).
 **Ne définis PAS `FIREBASE_CREDENTIALS`** : sur Cloud Run, l'authentification Admin
 Firebase utilise automatiquement les *Application Default Credentials* du projet.
 
 ```bash
-# Depuis la racine du repo. Le nom du service DOIT correspondre au serviceId de firebase.json
-# (« le-cadre ») et la région à celle de firebase.json (« europe-west1 »).
-gcloud run deploy le-cadre \
-  --source . \
+# Depuis la racine du repo.
+cd "/Users/pziwiakowsky/IdeaProjects/thothbook"
+GCLOUD="./google-cloud-sdk/bin/gcloud"
+PROJECT_ID="thothbook-app"
+
+# Backend Cloud Run
+"$GCLOUD" run deploy thothbook \
+  --project "$PROJECT_ID" \
   --region europe-west1 \
+  --source . \
   --allow-unauthenticated \
-  --min-instances 1 \
-  --set-env-vars "NEO4J_PASSWORD=xxx,GOOGLE_API_KEY=yyy,APP_BASE_URL=https://thothbook.web.app,STRIPE_SECRET_KEY=sk_xxx,STRIPE_WEBHOOK_SECRET=whsec_xxx"
+  --set-secrets "NEO4J_PASSWORD=NEO4J_PASSWORD:latest,GOOGLE_API_KEY=GOOGLE_API_KEY:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest" \
+  --set-env-vars "APP_BASE_URL=https://thothbook-app.web.app"
+
+# Frontend Firebase Hosting
+firebase deploy --only hosting --project "$PROJECT_ID"
 ```
 
 Notes :
@@ -60,9 +108,7 @@ Notes :
   jeton Firebase valide** (vérifié dans `auth.py`). C'est l'app qui protège, pas le réseau.
 - `--min-instances 1` : évite les démarrages à froid **et** garde la mémoire de conversation
   (`_historiques`) stable (sinon elle est par-instance — voir « Limites » du plan).
-- Pour des secrets propres, préfère **Secret Manager** :
-  `--set-secrets "NEO4J_PASSWORD=neo4j-pwd:latest,GOOGLE_API_KEY=gemini-key:latest,STRIPE_SECRET_KEY=stripe-secret:latest,STRIPE_WEBHOOK_SECRET=stripe-webhook:latest"` puis
-  `--update-env-vars "APP_BASE_URL=https://thothbook.web.app"`.
+- En provider OpenAI, remplace `GOOGLE_API_KEY` par `OPENAI_API_KEY` partout (secret + `--set-secrets`).
 
 ## 3 bis. Configurer Stripe
 
@@ -76,16 +122,17 @@ Notes :
 
 Vérifie que le `serviceId` et la `region` dans `firebase.json` correspondent bien au service déployé.
 
-## 4. Déployer le frontend sur Firebase Hosting
+## 5. Déployer le frontend sur Firebase Hosting
 
 ```bash
-firebase deploy --only hosting
+firebase use "$PROJECT_ID"
+firebase deploy --only hosting --project "$PROJECT_ID"
 ```
 
 Ouvre l'URL Hosting affichée (`https://thothbook.web.app/`). L'écran de connexion
 apparaît ; connecte-toi ; l'app charge ton état via `/api/...` (servi par Cloud Run).
 
-## 5. Vérifier
+## 6. Vérifier
 
 - Onglet réseau du navigateur : les appels `/api/etat`, `/api/suggestions`… renvoient 200.
 - Un appel sans être connecté → 401. Crédits épuisés → 402 avec message de recharge.
@@ -98,14 +145,14 @@ apparaît ; connecte-toi ; l'app charge ton état via `/api/...` (servi par Clou
 ```bash
 pip install -r requirements.txt && pip install -e .
 cp .env.example .env   # renseigne NEO4J_PASSWORD, la clé LLM, FIREBASE_CREDENTIALS et les secrets Stripe si tu testes le paiement
-uvicorn le_cadre.api:app --reload
+uvicorn thothbook.api:app --reload
 ```
 
 - `FIREBASE_CREDENTIALS` (local) = chemin vers le JSON de **compte de service** Firebase
   (Console → Paramètres → *Comptes de service* → *Générer une nouvelle clé privée*).
   **Ne commite jamais ce fichier** (déjà couvert par `.gitignore`).
 - En local, le backend sert aussi `web/index.html` sur `/` (pratique pour tester).
-- La **CLI** (`python -m le_cadre`) reste mono-utilisateur de dev (`uid="cli-dev"`), sans
+- La **CLI** (`python -m thothbook`) reste mono-utilisateur de dev (`uid="cli-dev"`), sans
   Firebase ni crédits — utile pour tester rapidement le graphe.
 
 ## Réglage des prix / marge

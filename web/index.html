@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Le Cadre</title>
+<title>Thothbook</title>
 <style>
-  /* Angle animé de la lumière qui fait le tour du cadre. */
+  /* Angle animé de la lumière qui fait le tour du contour. */
   @property --tour { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 
   :root {
-    /* Palette « musée futuriste » : mur crème, cadre bronze/bois, lumière dorée. */
+    /* Palette « musée futuriste » : mur crème, contour bronze/bois, lumière dorée. */
     --wall: #d8ccb6; --bg: #f7f2e9; --card: #fffdf8; --frame: #2b231c; --soft: #8c8174;
     --line: #e7ded0; --bronze: #9a7a4d; --bronze-d: #5e4729; --gold: #c8a567; --light: #ffe09a;
     --accent: #9a7a4d; --ok: #5b7d4f; --warn: #c98a2e; --sortie: #b06a3f;
@@ -23,7 +23,7 @@
     background: radial-gradient(circle at 50% -10%, #e9e0cd, var(--wall));
   }
 
-  /* ---------- Le CADRE qui entoure l'app ---------- */
+  /* ---------- Le contour qui entoure l'app ---------- */
   .app-frame {
     position: fixed; inset: 16px; border-radius: 26px; padding: 13px;
     background: linear-gradient(135deg, #e0c590 0%, #a17e4d 24%, #6c5030 50%, #8e6c40 72%, #d2ab68 100%);
@@ -44,9 +44,9 @@
   }
   .app-frame.loading::before { opacity: 1; animation: tourLumiere .95s linear infinite; }
   @keyframes tourLumiere { to { --tour: 360deg; } }
-  /* Halo doré qui pulse autour du cadre pendant la réflexion (renforce la visibilité). */
-  .app-frame.loading { animation: haloCadre 1.5s ease-in-out infinite; }
-  @keyframes haloCadre {
+  /* Halo doré qui pulse autour du contour pendant la réflexion (renforce la visibilité). */
+  .app-frame.loading { animation: haloThothbook 1.5s ease-in-out infinite; }
+  @keyframes haloThothbook {
     0%, 100% { box-shadow: 0 32px 80px rgba(38,26,12,.42), inset 0 2px 3px rgba(255,255,255,.45),
                            inset 0 -3px 8px rgba(0,0,0,.35), 0 0 0 0 rgba(255,222,140,0); }
     50%      { box-shadow: 0 32px 80px rgba(38,26,12,.42), inset 0 2px 3px rgba(255,255,255,.45),
@@ -99,10 +99,11 @@
   .panel-body li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--line); }
   .panel-body li:last-child { border-bottom: none; }
   .t-nom { flex: 1; }
+  .t-planif { font-size: 11px; color: var(--ok); font-weight: 600; white-space: nowrap; }
   .vide { color: var(--soft); font-size: 13.5px; padding: 6px 4px; }
   .pastille { display: inline-block; color: var(--warn); font-weight: 800; margin-left: 4px; }
 
-  .t-btns { display: flex; gap: 6px; flex-shrink: 0; }
+  .t-btns { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
   .mini { border-radius: 10px; padding: 5px 9px; font-size: 13px; border: none; cursor: pointer; background: #efe7d8; }
   .mini.done { background: #e7efe0; }
   .mini.supprimer { background: #f4e4da; }
@@ -360,11 +361,35 @@
   </div>
 </div>
 
+<!-- OVERLAY PAIEMENT SUCCÈS -->
+<div class="overlay" id="checkout-success-overlay">
+  <div class="timer" style="width:380px; text-align:center;">
+    <div style="font-size:56px; margin-bottom:12px;">🎉</div>
+    <h2 style="color:var(--ok); margin:0 0 10px;">Paiement confirmé !</h2>
+    <div class="focus-sur" style="margin-bottom:18px;">Tes crédits sont en cours de synchronisation…</div>
+    <div id="checkout-success-credits" style="font-size:22px; font-weight:700; color:var(--bronze); margin-bottom:20px; min-height:32px;"></div>
+    <button class="btn-ok" style="width:100%;" onclick="fermerCheckoutSuccess()">✨ Commencer</button>
+  </div>
+</div>
+
+<!-- OVERLAY PAIEMENT ANNULÉ -->
+<div class="overlay" id="checkout-cancel-overlay">
+  <div class="timer" style="width:380px; text-align:center;">
+    <div style="font-size:56px; margin-bottom:12px;">😕</div>
+    <h2 style="margin:0 0 10px;">Paiement annulé</h2>
+    <div class="focus-sur" style="margin-bottom:20px;">Aucun montant n'a été débité.<br>Tu peux recharger à tout moment via le bouton ＋.</div>
+    <div style="display:flex; gap:10px; justify-content:center;">
+      <button class="btn-skip" onclick="fermerCheckoutCancel()">Fermer</button>
+      <button class="btn-ok" onclick="fermerCheckoutCancel(); ouvrirModalCredits()">Réessayer</button>
+    </div>
+  </div>
+</div>
+
 <!-- ÉCRAN DE CONNEXION (ouvert tant que l'utilisateur n'est pas authentifié) -->
 <div class="overlay open" id="login-overlay">
   <div class="timer" style="width: 360px; text-align: left;">
-    <h2 style="text-align:center; letter-spacing:3px;">LE CADRE</h2>
-    <div class="focus-sur" style="text-align:center;">Connecte-toi pour entrer dans le cadre.</div>
+    <h2 style="text-align:center; letter-spacing:3px;">THOTHBOOK</h2>
+    <div class="focus-sur" style="text-align:center;">Connecte-toi pour entrer dans Thothbook.</div>
     <label class="ev-lbl">Email</label>
     <input id="login-email" class="ev-in" type="email" autocomplete="email" />
     <label class="ev-lbl">Mot de passe</label>
@@ -408,12 +433,13 @@
 // ⚠️ REMPLACE ces valeurs par la config de TON projet Firebase :
 // Console Firebase -> Paramètres du projet -> « Tes applications » (Web) -> Config SDK.
 const firebaseConfig = {
-  apiKey: "AIzaSyCG-wnuUZ5qi3oqTo7hDcvJV_9_ydE2JQw",
-  authDomain: "thothbook.firebaseapp.com",
-  projectId: "thothbook",
-  storageBucket: "thothbook.firebasestorage.app",
-  messagingSenderId: "308082990960",
-  appId: "1:308082990960:web:f4268220463421aeee79b5",
+  apiKey: "AIzaSyAPs2V7zuNyOTKNkTbJHOq7ta8p9V1nybc",
+  authDomain: "thothbook-app.firebaseapp.com",
+  projectId: "thothbook-app",
+  storageBucket: "thothbook-app.firebasestorage.app",
+  messagingSenderId: "440579793919",
+  appId: "1:440579793919:web:84096e969bdd7173847dca",
+  measurementId: "G-LPPHBWJB72"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -616,7 +642,7 @@ async function attendreCreditApresPaiement() {
       toast("Crédits ajoutés ✔");
       fermerModalCredits(true);
       await proposerSiVide();
-      return;
+      return solde;
     }
     await sleep(2000);
   }
@@ -624,20 +650,38 @@ async function attendreCreditApresPaiement() {
   await chargerOffresCredits(true);
   renderModalCredits("Paiement reçu, mais crédits pas encore visibles. Vérifie le webhook Stripe puis réessaie dans 1 minute.");
   ouvrirModalCredits({ force: false });
+  throw new Error("timeout");
 }
 
 function gererRetourCheckout() {
   const url = new URL(window.location.href);
   const etat = url.searchParams.get("checkout");
   if (!etat) return;
-  if (etat === "success") {
-    attenteCreditCheckout = true;
-    toast("Paiement confirmé. Synchronisation des crédits en cours...");
-    setTimeout(() => { attendreCreditApresPaiement(); }, 600);
-  }
-  if (etat === "cancel") toast("Paiement annulé.");
   url.searchParams.delete("checkout");
   history.replaceState({}, "", url.pathname + (url.search ? url.search : "") + url.hash);
+
+  if (etat === "success") {
+    attenteCreditCheckout = true;
+    document.getElementById("checkout-success-overlay").classList.add("open");
+    document.getElementById("checkout-success-credits").textContent = "Synchronisation en cours…";
+    // Attend que le webhook crédite, puis affiche le nouveau solde
+    attendreCreditApresPaiement().then(() => {
+      document.getElementById("checkout-success-credits").textContent = `🪙 Crédits : ${soldeCourant}`;
+    }).catch(() => {
+      document.getElementById("checkout-success-credits").textContent = "Rafraîchis la page si les crédits n'apparaissent pas.";
+    });
+  }
+  if (etat === "cancel") {
+    document.getElementById("checkout-cancel-overlay").classList.add("open");
+  }
+}
+
+function fermerCheckoutSuccess() {
+  document.getElementById("checkout-success-overlay").classList.remove("open");
+}
+
+function fermerCheckoutCancel() {
+  document.getElementById("checkout-cancel-overlay").classList.remove("open");
 }
 /* =================== FIN AUTHENTIFICATION FIREBASE =================== */
 
@@ -669,7 +713,7 @@ function toast(txt) {
   t.textContent = txt; t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2200);
 }
-// Lumière qui fait le tour du cadre pendant que Thoth réfléchit.
+// Lumière qui fait le tour du contour pendant que Thoth réfléchit.
 function frameLoading(on) { document.getElementById("frame").classList.toggle("loading", on); }
 
 /* ---------- Onglets ---------- */
@@ -758,7 +802,7 @@ function renderAfaire() {
     ? `<div class="afaire-section"><div class="sous-titre">🟠 En cours (à reprendre)</div>
          <ul>${ec.map(({ t, i }) => liEnCours(t, i)).join("")}</ul></div>`
     : "";
-  body.innerHTML = chip + ecHtml + `<div id="afaire-liste"></div>`;
+  body.innerHTML = chip + ecHtml + `<div class="sous-titre" style="margin:6px 0 2px;">✅ À faire</div><div id="afaire-liste"></div>`;
   afaireMax = AFAIRE_PAGE;
   renderAfaireListe();
   // Scroll infini : on révèle plus de tâches en approchant du bas.
@@ -781,22 +825,47 @@ function renderAfaireListe() {
     `<ul>${idx.slice(0, afaireMax).map(i => liTache(tachesCourantes[i], i)).join("")}</ul>` +
     (reste > 0 ? `<div class="vide load-more">… ${reste} de plus (fais défiler)</div>` : "");
 }
+function dateCourteFr(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const jours = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
+  const mois  = ["jan", "fév", "mar", "avr", "mai", "juin", "juil", "août", "sep", "oct", "nov", "déc"];
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  const heure = (h === "00" && m === "00") ? "" : ` ${h}h${m}`;
+  return `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}${heure}`;
+}
 function liTache(t, i) {
   const urg = t.urgence === "haute" ? `<span class="pastille" title="urgence haute">!</span>` : "";
+  const planifie = t.prochaine_seance;
+  const dateLabel = planifie ? dateCourteFr(t.prochaine_seance) : "";
+  const boutonPlan = planifie
+    ? `<span class="t-planif" title="Planifié le ${dateLabel}">⏰ ${dateLabel}</span>
+       <button class="mini focus" title="Replanifier" onclick="planifierTache(${i})">🔄</button>`
+    : `<button class="mini focus" title="Planifier" onclick="planifierTache(${i})">📅</button>`;
   return `<li>
     <span class="t-nom">${escapeHtml(t.nom)}${urg}</span>
     <span class="t-btns">
-      <button class="mini focus" title="Planifier" onclick="planifierTache(${i})">📅</button>
+      ${boutonPlan}
       <button class="mini done" title="Marquer fait" onclick="marquerFait(${i})">✓</button>
       <button class="mini supprimer" title="Supprimer" onclick="supprimerTache(${i})">🗑️</button>
     </span></li>`;
 }
 function liEnCours(t, i) {
+  const urg = t.urgence === "haute" ? `<span class="pastille" title="urgence haute">!</span>` : "";
+  const planifie = t.prochaine_seance;
+  const dateLabel = planifie ? dateCourteFr(t.prochaine_seance) : "";
+  const boutonPlan = planifie
+    ? `<span class="t-planif" title="Planifié le ${dateLabel}">⏰ ${dateLabel}</span>
+       <button class="mini focus" title="Replanifier" onclick="reprendreTache(${i})">🔄</button>`
+    : `<button class="mini focus" title="Reprendre (planifier)" onclick="reprendreTache(${i})">📅</button>`;
   return `<li>
-    <span class="t-nom">${escapeHtml(t.nom)}</span>
+    <span class="t-nom">${escapeHtml(t.nom)}${urg}</span>
     <span class="t-btns">
-      <button class="mini focus" title="Reprendre (planifier)" onclick="reprendreTache(${i})">📅</button>
+      ${boutonPlan}
       <button class="mini done" title="Marquer fait" onclick="marquerFaitEnCours(${i})">✓</button>
+      <button class="mini supprimer" title="Supprimer" onclick="supprimerEnCours(${i})">🗑️</button>
     </span></li>`;
 }
 function filtrerObjectif(i) {
@@ -1045,21 +1114,32 @@ function dejaPlanifie(s) {
 }
 function ajouterPropositions(data, prepend) {
   const cards = (data.suggestions || [])
-    .filter(s => !dejaPlanifie(s))
+    // Si prepend=true : l'utilisateur a explicitement cliqué (▶️ objectif/habitude/tâche)
+    // → on NE filtre PAS dejaPlanifie pour ne pas supprimer silencieusement sa demande.
+    .filter(s => prepend || !dejaPlanifie(s))
     .map(s => ({ type: "prop", sugg: s }));
   pile = prepend ? cards.concat(pile) : pile.concat(cards);
   renderListe();
+  return cards.length;
 }
 async function demanderThoth(message, prepend) {
+  // Bascule sur l'onglet Aujourd'hui pour que la carte soit visible
+  ouvrirVue("aujourdhui");
   frameLoading(true);
   try {
     const data = await (await api("/chat", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }),
     })).json();
     await chargerSolde();
-    ajouterPropositions(data, prepend);
+    const nb = ajouterPropositions(data, prepend);
     if (data.message) toast(data.message);
-  } catch (e) { renderListe(); } finally { frameLoading(false); }
+    if (nb === 0 && !data.message) toast("Thoth n'a pas de suggestion pour l'instant. Réessaie !");
+  } catch (e) {
+    if (e.message !== "crédits épuisés" && e.message !== "non authentifié") {
+      toast("Impossible de contacter Thoth. Vérifie ta connexion.");
+    }
+    renderListe();
+  } finally { frameLoading(false); }
 }
 
 // Aides pour classer une suggestion et choisir les bons verbes.
@@ -1243,7 +1323,18 @@ async function supprimerTache(i) {
     body: JSON.stringify({ titre: nom, pourquoi: "", actions: [{ type: "supprimer_tache", nom }] }),
   });
   toast("🗑️ « " + nom + " » supprimée");
-  rafraichir();   // la tâche et ses créneaux disparaissent aussi du tableau de bord
+  rafraichir();
+}
+
+async function supprimerEnCours(i) {
+  const nom = enCoursCourantes[i].nom;
+  if (!confirm(`Supprimer « ${nom} » ?`)) return;
+  await api("/valider", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titre: nom, pourquoi: "", actions: [{ type: "supprimer_tache", nom }] }),
+  });
+  toast("🗑️ « " + nom + " » supprimée");
+  rafraichir();
 }
 
 /* ---------- Objectifs ---------- */

@@ -1,5 +1,5 @@
-// Graphe d'exemple pour « Le Cadre ».
-// Charge-le avec :  python -m le_cadre --seed
+// Graphe d'exemple pour « Thothbook ».
+// Charge-le avec :  python -m thothbook --seed
 // (ou copie-colle dans Neo4j Browser, http://localhost:7474)
 
 MERGE (m:Moi {id:'moi'});

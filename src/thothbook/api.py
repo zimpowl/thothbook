@@ -1,4 +1,4 @@
-"""Serveur web de Le Cadre (FastAPI), multi-utilisateur.
+"""Serveur web de Thothbook (FastAPI), multi-utilisateur.
 
 Réutilise la même logique que la CLI (graphe / llm / conseil), mais l'expose en
 endpoints HTTP. Chaque route data est sous /api et exige un jeton Firebase valide
@@ -46,7 +46,7 @@ from .schemas import Reponse, Suggestion
 
 # Initialisé une fois au démarrage du serveur.
 _cfg = charger_config()
-_graphe = Graphe(_cfg["neo4j"]["uri"], _cfg["neo4j"]["user"], _cfg["neo4j"]["password"])
+_graphe: "Graphe | None" = None
 _modele = construire_modele(_cfg)
 _nom_modele = _cfg["llm"]["model"]
 _credits_par_euro = int(_cfg.get("credits", {}).get("par_euro", 100) or 100)
@@ -55,7 +55,18 @@ _offert = int(_cfg.get("credits", {}).get("offert_inscription", 0) or 0)
 # Mémoire de conversation PAR utilisateur (en mémoire process ; voir limites du plan).
 _historiques: dict[str, list] = {}
 
-app = FastAPI(title="Le Cadre")
+
+def _get_graphe() -> "Graphe":
+    """Connexion lazy à Neo4j : créée au premier appel, pas à l'import.
+    Permet au container Cloud Run de démarrer et écouter sur le port
+    même si Neo4j est temporairement injoignable."""
+    global _graphe
+    if _graphe is None:
+        _graphe = Graphe(_cfg["neo4j"]["uri"], _cfg["neo4j"]["user"], _cfg["neo4j"]["password"])
+    return _graphe
+
+
+app = FastAPI(title="Thothbook")
 api = APIRouter(prefix="/api")
 
 PROMPT_PROACTIF = (
@@ -85,16 +96,16 @@ def _maintenant_fr() -> str:
 
 def uid_courant(u: dict = Depends(utilisateur_courant)) -> str:
     """Vérifie le jeton, garantit l'existence de l'utilisateur et renvoie son UID."""
-    _graphe.assurer_utilisateur(u["uid"], u.get("email"), _offert, _credits_par_euro)
+    _get_graphe().assurer_utilisateur(u["uid"], u.get("email"), _offert, _credits_par_euro)
     return u["uid"]
 
 
 def _exiger_credits(uid: str) -> None:
     """Garde avant un appel LLM : solde épuisé -> 402 (le front propose de recharger)."""
-    if _graphe.solde(uid) <= 0:
+    if _get_graphe().solde(uid) <= 0:
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="Crédits épuisés. Recharge pour continuer à utiliser Le Cadre.",
+            detail="Crédits épuisés. Recharge pour continuer à utiliser Thothbook.",
         )
 
 
@@ -102,9 +113,9 @@ def _repondre(uid: str, message_utilisateur: str) -> Reponse:
     """Un tour de conversation : ajoute le message, interroge le LLM, facture, renvoie la réponse."""
     historique = _historiques.setdefault(uid, [])
     historique.append(HumanMessage(content=message_utilisateur))
-    contexte = _graphe.lire_contexte(uid)
+    contexte = _get_graphe().lire_contexte(uid)
     reponse, usage = generer_reponse(_modele, contexte, historique, _maintenant_fr())
-    facturer_appel(_cfg, _graphe, uid, _nom_modele, usage)
+    facturer_appel(_cfg, _get_graphe(), uid, _nom_modele, usage)
     historique.append(AIMessage(content=reponse.message))
     return reponse
 
@@ -136,7 +147,7 @@ def index() -> FileResponse:
 
 @api.get("/solde")
 def solde(uid: str = Depends(uid_courant)) -> dict:
-    return {"solde": _graphe.solde(uid), "unite": "credits"}
+    return {"solde": _get_graphe().solde(uid), "unite": "credits"}
 
 
 @api.get("/paiements/offres")
@@ -155,7 +166,7 @@ def paiements_checkout(
     request: Request,
     utilisateur: dict = Depends(utilisateur_courant),
 ) -> dict:
-    _graphe.assurer_utilisateur(utilisateur["uid"], utilisateur.get("email"), _offert, _credits_par_euro)
+    _get_graphe().assurer_utilisateur(utilisateur["uid"], utilisateur.get("email"), _offert, _credits_par_euro)
     try:
         return creer_session_checkout(
             _cfg,
@@ -175,7 +186,7 @@ async def paiements_webhook(request: Request, stripe_signature: str | None = Hea
     payload = await request.body()
     try:
         event = construire_evenement_webhook(payload, stripe_signature)
-        return traiter_evenement_stripe(_cfg, _graphe, event, _credits_par_euro)
+        return traiter_evenement_stripe(_cfg, _get_graphe(), event, _credits_par_euro)
     except PaiementConfigurationErreur as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except PaiementErreur as exc:
@@ -184,12 +195,12 @@ async def paiements_webhook(request: Request, stripe_signature: str | None = Hea
 
 @api.get("/etat")
 def etat(uid: str = Depends(uid_courant)) -> dict:
-    return _graphe.lire_etat(uid)
+    return _get_graphe().lire_etat(uid)
 
 
 @api.get("/agenda")
 def agenda(uid: str = Depends(uid_courant)) -> list:
-    return _graphe.lire_agenda(uid)
+    return _get_graphe().lire_agenda(uid)
 
 
 class SuggestionsRequest(BaseModel):
@@ -249,17 +260,17 @@ def ajuster(req: AjusterRequest, uid: str = Depends(uid_courant)) -> Reponse:
         f"Repropose UNIQUEMENT cette suggestion (une seule), corrigée selon ma demande, "
         f"avec ses actions à jour. Ne propose rien d'autre."
     )
-    contexte = _graphe.lire_contexte(uid)
+    contexte = _get_graphe().lire_contexte(uid)
     reponse, usage = generer_reponse(_modele, contexte, [HumanMessage(content=consigne)], _maintenant_fr())
-    facturer_appel(_cfg, _graphe, uid, _nom_modele, usage)
+    facturer_appel(_cfg, _get_graphe(), uid, _nom_modele, usage)
     return reponse
 
 
 @api.post("/valider")
 def valider(suggestion: Suggestion, uid: str = Depends(uid_courant)) -> dict:
-    appliquees = [_graphe.appliquer_action(uid, a.model_dump()) for a in suggestion.actions]
+    appliquees = [_get_graphe().appliquer_action(uid, a.model_dump()) for a in suggestion.actions]
     _historiques.setdefault(uid, []).append(HumanMessage(content=f"[J'ai validé : {suggestion.titre}]"))
-    return {"ok": True, "appliquees": appliquees, "stats": _graphe.stats(uid)}
+    return {"ok": True, "appliquees": appliquees, "stats": _get_graphe().stats(uid)}
 
 
 app.include_router(api)

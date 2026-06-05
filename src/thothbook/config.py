@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 from dotenv import load_dotenv
 
-# Racine du projet : .../Le Cadre  (ce fichier est dans src/le_cadre/)
+# Racine du projet : .../thothbook  (ce fichier est dans src/thothbook/)
 ROOT = Path(__file__).resolve().parents[2]
 
 

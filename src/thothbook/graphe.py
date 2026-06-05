@@ -500,7 +500,7 @@ class Graphe:
 
         if t == "noter_progres":
             # « J'ai avancé mais pas fini » : la tâche passe en cours (ambre « à reprendre »,
-            # plus de rouge), et Le Cadre la reproposera EN PRIORITÉ pour la continuer.
+            # plus de rouge), et Thothbook la reproposera EN PRIORITÉ pour la continuer.
             self._executer(
                 "MATCH (:Utilisateur {uid:$uid})-[:DOIT_FAIRE]->(tt:Tache {nom:$nom}) SET tt.statut='en_cours'",
                 uid=uid,
@@ -622,9 +622,11 @@ class Graphe:
             "MATCH (:Utilisateur {uid:$uid})-[:DOIT_FAIRE]->(t:Tache) "
             "WHERE coalesce(t.statut,'a_faire') = 'a_faire' "
             "OPTIONAL MATCH (t)-[:SERT]->(o:Objectif) "
+            "OPTIONAL MATCH (t)-[:PLANIFIE_A]->(cf:Creneau) WHERE cf.debut >= $now "
             # en_retard = la tâche a un créneau dont l'heure est déjà passée (-> libellé « Fait »).
             "RETURN DISTINCT t.nom AS nom, coalesce(t.urgence,'moyenne') AS urgence, o.nom AS sert, "
-            "size([(t)-[:PLANIFIE_A]->(c:Creneau) WHERE c.debut < $now | 1]) > 0 AS en_retard "
+            "size([(t)-[:PLANIFIE_A]->(c:Creneau) WHERE c.debut < $now | 1]) > 0 AS en_retard, "
+            "min(cf.debut) AS prochaine_seance "
             # Tri par urgence (haute -> moyenne -> basse) puis alphabétique.
             "ORDER BY CASE urgence WHEN 'haute' THEN 0 WHEN 'moyenne' THEN 1 ELSE 2 END, toLower(nom)",
             uid=uid,
@@ -633,8 +635,11 @@ class Graphe:
         en_cours = self._executer(
             "MATCH (:Utilisateur {uid:$uid})-[:DOIT_FAIRE]->(t:Tache) WHERE t.statut = 'en_cours' "
             "OPTIONAL MATCH (t)-[:SERT]->(o:Objectif) "
-            "RETURN DISTINCT t.nom AS nom, coalesce(t.urgence,'moyenne') AS urgence, o.nom AS sert",
+            "OPTIONAL MATCH (t)-[:PLANIFIE_A]->(cf:Creneau) WHERE cf.debut >= $now "
+            "RETURN DISTINCT t.nom AS nom, coalesce(t.urgence,'moyenne') AS urgence, o.nom AS sert, "
+            "min(cf.debut) AS prochaine_seance",
             uid=uid,
+            now=maintenant,
         )
         habitudes = self._executer(
             "MATCH (:Utilisateur {uid:$uid})-[:PRATIQUE]->(h:Habitude) "

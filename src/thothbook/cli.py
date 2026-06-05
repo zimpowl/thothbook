@@ -1,6 +1,6 @@
-"""Interface conversationnelle en terminal pour Le Cadre.
+"""Interface conversationnelle en terminal pour Thothbook.
 
-Boucle : tu écris -> le Cadre propose des suggestions -> tu valides (elles
+Boucle : tu écris -> Thothbook propose des suggestions -> tu valides (elles
 s'écrivent dans le graphe) ou tu clarifies (il re-suggère).
 """
 
@@ -25,7 +25,7 @@ UID_DEV = "cli-dev"
 
 
 def _afficher_reponse(message: str, suggestions: list[Suggestion]) -> None:
-    console.print(Panel(message, title="🟦 Le Cadre", border_style="blue"))
+    console.print(Panel(message, title="🟦 Thothbook", border_style="blue"))
     for i, s in enumerate(suggestions, start=1):
         quand = f"  •  [italic]{s.quand}[/]" if s.quand else ""
         console.print(f"[bold cyan]{i}.[/] [bold]{s.titre}[/]{quand}")
@@ -63,11 +63,11 @@ def lancer_chat() -> None:
 
     console.print(
         Panel(
-            "Bienvenue dans le cadre.\n\n"
+            "Bienvenue dans Thothbook.\n\n"
             "Je ne suis pas là pour te contraindre, je suis là pour te guider.\n"
             "Raconte-moi ta journée, tes objectifs, ou demande-moi quoi faire.\n\n"
             "[dim]Commandes : « voir » (état du graphe) · « q » (quitter)[/]",
-            title="Le Cadre",
+            title="Thothbook",
             border_style="blue",
         )
     )
@@ -81,7 +81,7 @@ def lancer_chat() -> None:
             bas = user.lower()
 
             if bas in {"q", "quit", "exit"}:
-                console.print("Reste dans le cadre. 🎯")
+                console.print("Reste sur ta trajectoire. 🎯")
                 break
             if not user:
                 continue
@@ -107,7 +107,7 @@ def lancer_chat() -> None:
 
             # Sinon : nouveau message / clarification pour le LLM.
             historique.append(HumanMessage(content=user))
-            with console.status("[blue]Le Cadre réfléchit…[/]"):
+            with console.status("[blue]Thothbook réfléchit…[/]"):
                 contexte = graphe.lire_contexte(UID_DEV)
                 date_str = datetime.now().strftime("%A %d %B %Y")
                 reponse, _usage = generer_reponse(modele, contexte, historique, date_str)  # CLI dev : pas de facturation

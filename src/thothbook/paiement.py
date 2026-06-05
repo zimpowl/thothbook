@@ -126,7 +126,7 @@ def creer_session_checkout(cfg: dict, base_url: str, uid: str, email: str | None
                     "currency": devise,
                     "unit_amount": pack["prix_centimes"],
                     "product_data": {
-                        "name": f"Le Cadre — {pack['label']}",
+                        "name": f"Thothbook — {pack['label']}",
                         "description": (
                             f"{pack['total_credits']} crédits"
                             + (f" dont {pack['bonus_credits']} offerts" if pack["bonus_credits"] else "")
@@ -157,10 +157,14 @@ def traiter_evenement_stripe(cfg: dict, graphe, event: Any, credits_par_euro: in
 
     session = _lire(_lire(event, "data", {}), "object", {})
     payment_status = _lire(session, "payment_status")
+
+    # Pour checkout.session.completed : on n'agit que si le paiement est final.
+    # "unpaid" = paiement asynchrone en attente → on attend checkout.session.async_payment_succeeded.
+    # Pour async_payment_succeeded : payment_status est déjà "paid", pas de filtre nécessaire.
     if event_type == "checkout.session.completed" and payment_status not in {"paid", "no_payment_required"}:
         return {
             "ignore": True,
-            "reason": "paiement_pas_encore_final",
+            "reason": "paiement_pas_encore_final_attente_async_payment_succeeded",
             "event_type": event_type,
             "payment_status": payment_status,
         }
