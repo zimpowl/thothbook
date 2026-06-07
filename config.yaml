@@ -11,58 +11,73 @@ neo4j:
 llm:
   # provider : "google_genai" (Gemini) ou "openai"
   provider: google_genai
-  # model : "gemini-2.0-flash" pour Gemini, "gpt-4o-mini" ou "gpt-4o" pour OpenAI
-  model: gemini-3.1-flash-lite
+  # gemini-3.5-flash : rapide, qualité excellente, très bon rapport coût/qualité.
+  model: gemini-3.5-flash
   temperature: 0
 
 # Crédits : solde entier (sans décimales).
 credits:
-  # 1 € payé = 100 crédits de base. Les packs peuvent ensuite ajouter un bonus.
+  # 1 € payé = 100 crédits. Garde un chiffre rond et intuitif pour l'utilisateur.
   par_euro: 100
-  # Nouveau compte : 0 pour forcer une vraie recharge avant usage IA.
-  offert_inscription: 100
-  # Débit minimum par appel LLM (même pour un très petit prompt) : positionnement premium.
-  debit_minimum: 25
+  # 500 crédits offerts à l'inscription = ~55 appels gratuits.
+  # Objectif : laisser l'utilisateur remplir tout son graphe (objectifs, tâches, habitudes)
+  # avant de lui demander de payer. Coût opérateur : ~2 centimes par utilisateur.
+  offert_inscription: 500
+  # Pas de minimum artificiel : l'usage réel détermine le coût.
+  debit_minimum: 1
   packs:
-    - id: atelier
-      label: Pack Atelier
-      description: Entrée premium pour utiliser Thoth sérieusement.
-      prix_eur: 19
-      credits: 1900
+    - id: decouverte
+      label: Pack Découverte
+      description: Pour tester l'app sans engagement.
+      prix_eur: 5
+      credits: 500
       bonus_credits: 0
-      badge: Départ
+      badge: Entrée
       ordre: 1
-    - id: studio
-      label: Pack Studio
-      description: Le meilleur compromis, avec un vrai bonus de recharge.
+    - id: mensuel
+      label: Pack Mensuel
+      description: Usage quotidien intense pendant 1 mois complet.
+      prix_eur: 20
+      credits: 2000
+      bonus_credits: 200
+      badge: Recommandé
+      ordre: 2
+    - id: trimestriel
+      label: Pack Trimestriel
+      description: 3 mois d'usage quotidien avec un bonus généreux.
       prix_eur: 49
       credits: 4900
-      bonus_credits: 1400
-      badge: Bonus
-      ordre: 2
-    - id: maison
-      label: Pack Maison
-      description: Gros volume avec un bonus encore plus généreux.
-      prix_eur: 99
-      credits: 9900
-      bonus_credits: 4100
-      badge: Grosse recharge
+      bonus_credits: 2000
+      badge: Meilleur prix
       ordre: 3
 
 paiements:
   devise: eur
 
 # Tarification du paiement à l'usage.
-#   - prix par MILLION de tokens (en euros), à RENSEIGNER avec les vrais tarifs du provider
-#     (ce sont des valeurs d'exemple — vérifie la grille de prix officielle de ton modèle).
-#   - marge : multiplicateur appliqué au coût réel avant conversion en crédits.
-#     Ici elle est volontairement très haute pour un positionnement assumé « premium ».
+#
+# Calcul : crédits facturés = ceil(coût_réel_€ × marge × par_euro)
+#
+# Avec gemini-2.0-flash (tarifs Google réels) et marge=200 :
+#   Appel typique (1500 tokens in + 700 out) :
+#     coût réel = 1500×0.10/1M + 700×0.40/1M = 0.00043€
+#     crédits   = ceil(0.00043 × 200 × 100) = 9 crédits/appel
+#
+#   20€ = 2200 crédits → ~244 appels → 8 appels/jour × 30 jours  (usage intensif quotidien ✓)
+#   Marge réelle : 20€ / (244 × 0.00043€) ≈ 190x
+#
 tarifs:
-  marge: 600.0
+  marge: 200.0
   defaut:
-    input_par_million: 0.10
-    output_par_million: 0.40
+    input_par_million: 1.50
+    output_par_million: 9.00
   modeles:
-    gemini-3.1-flash-lite:
-      input_par_million: 0.10
-      output_par_million: 0.40
+    gemini-3.5-flash:
+      input_par_million: 1.50
+      output_par_million: 9.00
+    gemini-3.5-flash-lite:
+      input_par_million: 0.25
+      output_par_million: 1.50
+    gemini-3.5-pro:
+      input_par_million: 2.00
+      output_par_million: 12.00

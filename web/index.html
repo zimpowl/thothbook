@@ -25,38 +25,38 @@
 
   /* ---------- Le contour qui entoure l'app ---------- */
   .app-frame {
-    position: fixed; inset: 16px; border-radius: 26px; padding: 13px;
+    position: fixed; inset: 8px; border-radius: 20px; padding: 5px;
     background: linear-gradient(135deg, #e0c590 0%, #a17e4d 24%, #6c5030 50%, #8e6c40 72%, #d2ab68 100%);
-    box-shadow: 0 32px 80px rgba(38,26,12,.42),
-                inset 0 2px 3px rgba(255,255,255,.45),
-                inset 0 -3px 8px rgba(0,0,0,.35);
+    box-shadow: 0 18px 50px rgba(38,26,12,.35),
+                inset 0 1px 2px rgba(255,255,255,.4),
+                inset 0 -2px 5px rgba(0,0,0,.28);
   }
   /* La lumière : anneau lumineux qui tourne sur le bord, visible seulement au chargement. */
   .app-frame::before {
-    content: ""; position: absolute; inset: 0; border-radius: 26px; padding: 3.5px;
+    content: ""; position: absolute; inset: 0; border-radius: 20px; padding: 2px;
     background: conic-gradient(from var(--tour),
       transparent 0 38%, rgba(255,221,140,.5) 54%, var(--light) 68%, #fffdf2 80%,
       var(--light) 90%, rgba(255,221,140,.5) 97%, transparent 100%);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor; mask-composite: exclude;
     opacity: 0; transition: opacity .35s; pointer-events: none;
-    filter: drop-shadow(0 0 14px var(--light)) drop-shadow(0 0 5px #fff7df);
+    filter: drop-shadow(0 0 10px var(--light)) drop-shadow(0 0 4px #fff7df);
   }
   .app-frame.loading::before { opacity: 1; animation: tourLumiere .95s linear infinite; }
   @keyframes tourLumiere { to { --tour: 360deg; } }
   /* Halo doré qui pulse autour du contour pendant la réflexion (renforce la visibilité). */
   .app-frame.loading { animation: haloThothbook 1.5s ease-in-out infinite; }
   @keyframes haloThothbook {
-    0%, 100% { box-shadow: 0 32px 80px rgba(38,26,12,.42), inset 0 2px 3px rgba(255,255,255,.45),
-                           inset 0 -3px 8px rgba(0,0,0,.35), 0 0 0 0 rgba(255,222,140,0); }
-    50%      { box-shadow: 0 32px 80px rgba(38,26,12,.42), inset 0 2px 3px rgba(255,255,255,.45),
-                           inset 0 -3px 8px rgba(0,0,0,.35), 0 0 48px 7px rgba(255,222,140,.65); }
+    0%, 100% { box-shadow: 0 18px 50px rgba(38,26,12,.35), inset 0 1px 2px rgba(255,255,255,.4),
+                           inset 0 -2px 5px rgba(0,0,0,.28), 0 0 0 0 rgba(255,222,140,0); }
+    50%      { box-shadow: 0 18px 50px rgba(38,26,12,.35), inset 0 1px 2px rgba(255,255,255,.4),
+                           inset 0 -2px 5px rgba(0,0,0,.28), 0 0 32px 5px rgba(255,222,140,.55); }
   }
 
   .app-inner {
-    position: absolute; inset: 13px; border-radius: 14px; background: var(--bg);
+    position: absolute; inset: 5px; border-radius: 16px; background: var(--bg);
     overflow: hidden; display: flex; flex-direction: column;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,.05), 0 0 22px rgba(0,0,0,.18) inset;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.04), 0 0 16px rgba(0,0,0,.14) inset;
   }
 
   /* ---------- Barre du haut (compacte) ---------- */
@@ -80,8 +80,10 @@
   }
 
   /* ---------- Zone de contenu ---------- */
+  /* Padding normal pour Aujourd'hui ; le calendrier gère le sien directement */
   .content { flex: 1 1 auto; min-height: 0; padding: 16px; }
-  .vue { height: 100%; }
+  /* Agenda : plein bord, zéro padding horizontal pour maximiser la largeur des cases */
+  #vue-agenda { margin: 0 -16px -16px; padding: 16px 0 0; height: calc(100% + 16px); }
   .hidden { display: none !important; }
 
   /* Grille « Aujourd'hui » : Objectifs+Habitudes à gauche, centre = cartes, Tâches pleine hauteur à droite. */
@@ -172,14 +174,13 @@
 
   /* ---------- Calendrier (recoloré sur la nouvelle palette) ---------- */
   #vue-agenda { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-  .cal-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex: 0 0 auto; }
+  .cal-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex: 0 0 auto; padding: 0 16px; }
   .cal-nav h2 { margin: 0; font-size: 18px; text-transform: capitalize; flex: 1; text-align: center; }
   .cal-views { display: flex; gap: 6px; }
   .cal-views button { background: #efe7d8; color: var(--bronze-d); border-radius: 999px; padding: 6px 16px; }
   .cal-views button.actif { background: linear-gradient(135deg, var(--bronze), var(--bronze-d)); color: #fdf6e8; font-weight: 600; }
 
-  .cal { flex: 1; min-height: 0; display: flex; flex-direction: column;
-         border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--card); }
+  .cal { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .cal-head { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--line); }
   .cal-th { text-align: center; font-size: 12px; color: var(--soft); padding: 7px 0; text-transform: uppercase; letter-spacing: .5px; }
   .cal-th.ajd { color: var(--bronze); font-weight: 700; }
@@ -196,8 +197,8 @@
   .cal-more { position: absolute; bottom: 3px; left: 6px; font-size: 11px; color: var(--soft); }
 
   .cal-bars { position: absolute; inset: 0; pointer-events: none; }
-  .cal-bar { position: absolute; height: 18px; line-height: 18px; border-radius: 6px; color: #fff;
-             font-size: 11px; padding: 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  .cal-bar { position: absolute; height: 18px; line-height: 18px; border-radius: 3px; color: #fff;
+             font-size: 11px; padding: 0 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
              cursor: pointer; pointer-events: auto; display: flex; align-items: center; }
   .cal-bar .bar-txt { overflow: hidden; text-overflow: ellipsis; }
   .cal-bar.a_venir { background: var(--bronze); }        /* bronze : à venir */
@@ -208,6 +209,39 @@
   .cal-bar:hover .bar-actions { display: flex; }
   .cal-bar .bar-actions button { background: rgba(255,255,255,.25); border: none; color: #fff; border-radius: 5px; padding: 0 4px; font-size: 11px; cursor: pointer; line-height: 18px; }
   .cal-bar .bar-actions button:hover { background: rgba(255,255,255,.45); }
+
+  /* Cases cliquables en mois/semaine */
+  .cal-day { cursor: pointer; }
+  .cal-day:hover { background: rgba(154,122,77,.06); }
+  .cal-day.ajd { background: #f6efe1; }
+
+  /* Vue Jour */
+  .jour-liste { display: flex; flex-direction: column; gap: 8px; padding: 12px 8px; overflow-y: auto; }
+  .jour-event {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+    border-radius: 14px; cursor: pointer; border: 1px solid var(--line);
+    background: var(--card); transition: box-shadow .15s;
+  }
+  .jour-event:hover { box-shadow: 0 4px 14px rgba(60,44,28,.10); }
+  .jour-event.a_venir { border-left: 4px solid var(--bronze); }
+  .jour-event.fait    { border-left: 4px solid var(--ok); opacity: .8; }
+  .jour-event.a_revoir{ border-left: 4px solid var(--warn); }
+  .jour-event.sortie  { border-left: 4px solid var(--sortie); }
+  .jour-heure { font-size: 12px; color: var(--soft); white-space: nowrap; min-width: 72px; font-weight: 600; }
+  .jour-titre { flex: 1; font-size: 14px; font-weight: 600; color: var(--frame); }
+  .jour-event .bar-actions { display: none; gap: 4px; flex-shrink: 0; }
+  .jour-event:hover .bar-actions { display: flex; }
+  .jour-event .bar-actions button { background: #efe7d8; border: none; border-radius: 8px; padding: 4px 8px; font-size: 13px; cursor: pointer; }
+
+  /* Mobile : barres de mois plus épaisses et lisibles */
+  @media (max-width: 680px) {
+    .cal-bar { height: 20px; line-height: 20px; font-size: 10px; padding: 0 3px; border-radius: 2px; }
+    .cal-bar .bar-actions { display: none !important; }
+    .cal-day { cursor: pointer; min-height: 48px; }
+    .cal-num { font-size: 11px; padding: 2px 3px; }
+    .cal-nav { gap: 8px; flex-wrap: wrap; }
+    .cal-nav h2 { font-size: 15px; }
+  }
 
   .ev-lbl { display: block; font-size: 12px; color: var(--soft); margin: 12px 0 4px; }
   .ev-in { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; font: inherit; background: var(--bg); }
@@ -251,17 +285,81 @@
   .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--frame); color: #fdf6e8; padding: 12px 18px; border-radius: 12px; opacity: 0; transition: opacity .25s; pointer-events: none; font-size: 14px; z-index: 60; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
   .toast.show { opacity: 1; }
 
-  /* ---------- Responsive (mobile : on empile) ---------- */
-  @media (max-width: 880px) {
-    .app-frame { inset: 6px; padding: 8px; border-radius: 18px; }
-    .app-frame::before, .app-inner { border-radius: 18px; }
-    .app-inner { inset: 8px; }
-    .content { padding: 12px; overflow-y: auto; }
-    #vue-aujourdhui { grid-template-columns: 1fr; height: auto; }
-    .col, .centre { min-height: auto; }
-    .panel { flex: none; height: auto; max-height: 320px; }
-    .centre-haut { overflow: visible; }
+  /* ---------- Responsive mobile ---------- */
+  /* Barre d'onglets mobile en bas (visible uniquement < 680px) */
+  .mob-nav {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+    background: var(--card); border-top: 1px solid var(--line);
+    box-shadow: 0 -4px 18px rgba(60,44,28,.10);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); gap: 0;
+  }
+  .mob-nav button {
+    flex: 1; border: none; background: transparent; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 10px; color: var(--soft); padding: 6px 4px; border-radius: 12px;
+    transition: background .15s, color .15s;
+  }
+  .mob-nav button .mob-ico { font-size: 22px; line-height: 1; }
+  .mob-nav button.actif { color: var(--bronze-d); background: #f0e3c9; font-weight: 700; }
+
+  /* Vue liste agenda (mobile) */
+  #vue-agenda-liste { display: none; padding: 0; }
+  .ag-liste-jour { margin-bottom: 18px; }
+  .ag-liste-date { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+                   color: var(--soft); padding: 4px 0 6px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+  .ag-liste-date.today { color: var(--bronze-d); }
+  .ag-event-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 6px;
+                  border-radius: 12px; margin-bottom: 4px; }
+  .ag-event-row:hover { background: #f4ece0; }
+  .ag-event-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .ag-event-dot.a_venir  { background: var(--bronze); }
+  .ag-event-dot.fait      { background: var(--ok); }
+  .ag-event-dot.a_revoir { background: var(--warn); }
+  .ag-event-dot.sortie   { background: var(--sortie); }
+  .ag-event-info { flex: 1; }
+  .ag-event-titre { font-size: 14px; font-weight: 600; color: var(--frame); }
+  .ag-event-heure { font-size: 12px; color: var(--soft); margin-top: 2px; }
+
+  @media (max-width: 680px) {
+    /* Décale le contenu pour la barre du bas */
+    .app-inner { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+    .mob-nav { display: flex; }
+
+    /* Cache les onglets desktop dans la topbar */
+    .tabs { display: none; }
     .brand small { display: none; }
+    .app-frame { inset: 0; padding: 0; border-radius: 0; box-shadow: none; }
+    .app-frame::before { display: none; }
+    .app-inner { border-radius: 0; inset: 0; }
+    .content { padding: 10px; overflow-y: auto; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    .topbar { padding: 10px 14px; }
+    /* Agenda en mobile : le margin -10px annule le padding du .content, calendrier touche les bords */
+    #vue-agenda { margin: 0 -10px -10px; padding: 10px 0 0; height: calc(100% + 10px); }
+    #vue-agenda .cal-nav { padding: 0 10px; }
+
+    /* Aujourd'hui : une seule section visible à la fois */
+    #vue-aujourdhui {
+      display: flex; flex-direction: column; gap: 12px; height: 100%;
+    }
+    #col-gauche, #col-droite { display: none; flex-direction: column; gap: 12px; flex: 1; }
+    .centre { display: none; flex-direction: column; flex: 1; }
+    .panel { flex: 1 1 0; min-height: 0; height: auto; max-height: none; }
+    .centre-haut { overflow-y: auto; flex: 1; min-height: 0; }
+
+    /* Visibilité selon onglet mobile actif */
+    body.mob-sugg   .centre     { display: flex; flex: 1; }
+    body.mob-espace #col-gauche { display: flex; }
+    body.mob-espace #col-droite { display: flex; }
+    body.mob-agenda #vue-agenda { display: flex !important; flex-direction: column; height: 100%; }
+    body.mob-agenda #vue-agenda-liste { display: none !important; }
+    body.mob-agenda .cal { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    body:not(.mob-agenda) #vue-agenda { display: none !important; }
+    body:not(.mob-sugg):not(.mob-espace) #vue-aujourdhui { display: none; }
+    body.mob-sugg #vue-aujourdhui, body.mob-espace #vue-aujourdhui { flex: 1; min-height: 0; }
+
+    /* Cache le solde en toutes lettres sur mobile, reste emoji */
+    #solde .solde-txt { display: none; }
   }
 </style>
 </head>
@@ -290,7 +388,7 @@
       <!-- VUE AUJOURD'HUI -->
       <div id="vue-aujourdhui" class="vue">
         <!-- Colonne gauche : objectifs + habitudes -->
-        <div class="col">
+        <div class="col" id="col-gauche">
           <div class="panel">
             <div class="panel-head"><h3>🎯 Objectifs</h3></div>
             <div class="panel-body" id="p-objectifs"></div>
@@ -313,7 +411,7 @@
         </div>
 
         <!-- Colonne droite : à faire (+ en cours), pleine hauteur -->
-        <div class="col">
+        <div class="col" id="col-droite">
           <div class="panel">
             <div class="panel-head"><h3>✅ À faire</h3></div>
             <div class="panel-body" id="p-afaire"></div>
@@ -325,8 +423,9 @@
       <div id="vue-agenda" class="vue hidden">
         <div class="cal-nav">
           <div class="cal-views">
-            <button id="vbtn-mois" class="actif" onclick="setView('mois')">Mois</button>
+            <button id="vbtn-jour" onclick="setView('jour')">Jour</button>
             <button id="vbtn-sem" onclick="setView('semaine')">Semaine</button>
+            <button id="vbtn-mois" class="actif" onclick="setView('mois')">Mois</button>
           </div>
           <button class="ghost" onclick="changerPeriode(-1)">←</button>
           <h2 id="cal-titre"></h2>
@@ -337,11 +436,27 @@
           <div class="cal-head" id="cal-head"></div>
           <div class="cal-body" id="cal-body"></div>
         </div>
+        <!-- Vue liste (mobile) -->
+        <div id="vue-agenda-liste"></div>
       </div>
 
-    </div>
+    </div><!-- /content -->
+  </div><!-- /app-inner -->
+
+  <!-- BARRE DE NAVIGATION MOBILE (visible < 680px) -->
+  <div class="mob-nav" id="mob-nav">
+    <button id="mobt-sugg" class="actif" onclick="mobOnglet('sugg')">
+      <span class="mob-ico">✨</span>Thoth
+    </button>
+    <button id="mobt-espace" onclick="mobOnglet('espace')">
+      <span class="mob-ico">📋</span>Mon espace
+    </button>
+    <button id="mobt-agenda" onclick="mobOnglet('agenda')">
+      <span class="mob-ico">📅</span>Agenda
+    </button>
   </div>
-</div>
+
+</div><!-- /app-frame -->
 
 <!-- ÉDITION D'UN ÉVÉNEMENT DE L'AGENDA -->
 <div class="overlay" id="ev-overlay">
@@ -724,6 +839,77 @@ function ouvrirVue(vue) {
   document.getElementById("tab-ajd").classList.toggle("actif", ajd);
   document.getElementById("tab-agenda").classList.toggle("actif", !ajd);
   if (!ajd) chargerAgenda();
+}
+
+/* ---------- Onglets mobiles ---------- */
+const MOB_CLASSES = ["mob-sugg", "mob-espace", "mob-agenda"];
+function mobOnglet(onglet) {
+  const b = document.body;
+  MOB_CLASSES.forEach(c => b.classList.remove(c));
+  b.classList.add("mob-" + onglet);
+  ["sugg", "espace", "agenda"].forEach(id => {
+    const el = document.getElementById("mobt-" + id);
+    if (el) el.classList.toggle("actif", id === onglet);
+  });
+  if (onglet === "agenda") {
+    // Montre la vue agenda (et cache aujourd'hui)
+    document.getElementById("vue-agenda").classList.remove("hidden");
+    document.getElementById("vue-aujourdhui").classList.add("hidden");
+    chargerAgenda();
+  } else {
+    document.getElementById("vue-agenda").classList.add("hidden");
+    document.getElementById("vue-aujourdhui").classList.remove("hidden");
+  }
+}
+
+/* Rendu liste agenda pour mobile */
+function renderAgendaListe() {
+  const cont = document.getElementById("vue-agenda-liste");
+  if (!cont) return;
+  const JOURS = ["dim","lun","mar","mer","jeu","ven","sam"];
+  const MOIS  = ["jan","fév","mar","avr","mai","juin","juil","août","sep","oct","nov","déc"];
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Filtre : futurs + 7 derniers jours
+  const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() - 7);
+  const evs = [...evenements]
+    .filter(e => e.debut && new Date(e.debut) >= cutoff)
+    .sort((a, b) => new Date(a.debut) - new Date(b.debut));
+
+  if (!evs.length) { cont.innerHTML = `<div class="vide" style="padding:16px">Aucun événement à venir.</div>`; return; }
+
+  // Groupe par jour
+  const groupes = new Map();
+  evs.forEach(e => {
+    const k = String(e.debut).slice(0, 10);
+    if (!groupes.has(k)) groupes.set(k, []);
+    groupes.get(k).push(e);
+  });
+
+  let html = "";
+  groupes.forEach((liste, dateStr) => {
+    const d = new Date(dateStr + "T00:00:00");
+    const isToday = d.getTime() === today.getTime();
+    const label = isToday
+      ? "Aujourd'hui"
+      : `${JOURS[d.getDay()]} ${d.getDate()} ${MOIS[d.getMonth()]}`;
+    html += `<div class="ag-liste-jour">
+      <div class="ag-liste-date${isToday ? " today" : ""}">${label}</div>`;
+    liste.forEach(e => {
+      const h = heureDe(e.debut);
+      const hf = heureDe(e.fin);
+      const heure = h ? (hf && hf !== h ? `${h} – ${hf}` : h) : "Toute la journée";
+      html += `<div class="ag-event-row" onclick="ouvrirEditEvent(${e._i})">
+        <div class="ag-event-dot ${e.statut || 'a_venir'}"></div>
+        <div class="ag-event-info">
+          <div class="ag-event-titre">${escapeHtml(e.titre)}</div>
+          <div class="ag-event-heure">${heure}</div>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  cont.innerHTML = html;
 }
 
 /* ---------- État : remplit les 4 panneaux ---------- */
@@ -1409,7 +1595,7 @@ function abandonnerHabitude(i) {
 
 
 /* ---------- Calendrier ---------- */
-let calView = "mois";          // "mois" | "semaine"
+let calView = "mois";          // "mois" | "semaine" | "jour"
 let calCursor = null;          // un jour quelconque de la période affichée
 const LANE = 21;               // hauteur d'une « voie » d'étiquette (px)
 const TOP_MOIS = 21, TOP_SEM = 6;  // décalage des barres sous le n° du jour
@@ -1419,12 +1605,14 @@ function escapeHtml(s) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
 function dateLocale(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
-function jourCle(iso) { return String(iso).slice(0, 10); }              // YYYY-MM-DD d'un ISO
+function jourCle(iso) { return String(iso).slice(0, 10); }
 function heureDe(iso) { return String(iso).length > 10 ? String(iso).slice(11, 16) : ""; }
+
+const estMobile = () => window.innerWidth <= 680;
 
 async function chargerAgenda() {
   evenements = await (await api("/agenda")).json();
-  evenements.forEach((e, i) => { e._i = i; });   // index stable pour les clics
+  evenements.forEach((e, i) => { e._i = i; });
   if (!calCursor) calCursor = new Date();
   renderCalendrier();
 }
@@ -1432,14 +1620,27 @@ function setView(v) {
   calView = v;
   document.getElementById("vbtn-mois").classList.toggle("actif", v === "mois");
   document.getElementById("vbtn-sem").classList.toggle("actif", v === "semaine");
+  document.getElementById("vbtn-jour").classList.toggle("actif", v === "jour");
   renderCalendrier();
 }
 function changerPeriode(d) {
-  if (calView === "mois") calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() + d, 1);
-  else { const n = new Date(calCursor); n.setDate(n.getDate() + 7 * d); calCursor = n; }
+  if (calView === "mois") {
+    calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() + d, 1);
+  } else if (calView === "semaine") {
+    const n = new Date(calCursor); n.setDate(n.getDate() + 7 * d); calCursor = n;
+  } else { // jour
+    const n = new Date(calCursor); n.setDate(n.getDate() + d); calCursor = n;
+  }
   renderCalendrier();
 }
 function allerAujourdhui() { calCursor = new Date(); renderCalendrier(); }
+
+/* Clic sur une case : bascule en vue Jour sur la date cliquée */
+function allerJour(dateStr) {
+  const [y, m, day] = dateStr.split("-").map(Number);
+  calCursor = new Date(y, m - 1, day);
+  setView("jour");
+}
 
 // Découpe les 7 jours d'une semaine en barres : une par événement qui la chevauche, avec
 // sa colonne de départ, son span et sa voie (lane). Un multi-jours traversant 2 semaines
@@ -1473,14 +1674,14 @@ function placerBarres(jours) {
   return items;
 }
 
-function barreHtml(it, topBase) {
+function barreHtml(it, topBase, mobile) {
   const e = it.e;
   const left = (it.col / 7) * 100, width = (it.span / 7) * 100;
   const top = topBase + it.lane * LANE;
-  const heure = (!it.multi && heureDe(e.debut)) ? heureDe(e.debut) + " " : "";
+  const heure = (!it.multi && !mobile && heureDe(e.debut)) ? heureDe(e.debut) + " " : "";
   const cls = e.type === "sortie" ? "sortie" : (e.statut || "a_venir");
   return `<div class="cal-bar ${cls}" data-lane="${it.lane}" data-col="${it.col}" data-span="${it.span}"
-       style="left:calc(${left}% + 3px);width:calc(${width}% - 6px);top:${top}px"
+       style="left:${left}%;width:${width}%;top:${top}px"
        title="${escapeHtml(heure + e.titre)}" onclick="ouvrirEditEvent(${e._i})">
     <span class="bar-txt">${escapeHtml(heure + e.titre)}</span>
     <span class="bar-actions">
@@ -1498,10 +1699,18 @@ function joursDeSemaine(ref) {
 
 function renderCalendrier() {
   const ajd = dateLocale(new Date());
-  if (calView === "mois") renderMois(ajd); else renderSemaine(ajd);
+  if (calView === "mois") renderMois(ajd);
+  else if (calView === "semaine") renderSemaine(ajd);
+  else renderJour(ajd);
+  // Met à jour l'indicateur actif des boutons de vue
+  ["mois","semaine","jour"].forEach(v => {
+    const b = document.getElementById("vbtn-" + v);
+    if (b) b.classList.toggle("actif", v === calView);
+  });
 }
 
 function renderMois(ajd) {
+  const mobile = estMobile();
   const Y = calCursor.getFullYear(), M = calCursor.getMonth();
   document.getElementById("cal-titre").textContent = `${MOIS[M]} ${Y}`;
   document.getElementById("cal-head").innerHTML =
@@ -1520,9 +1729,10 @@ function renderMois(ajd) {
     for (const d of jours) {
       const key = dateLocale(d);
       const cls = (key === ajd ? "ajd " : "") + (d.getMonth() === M ? "" : "hors");
-      cells += `<div class="cal-day ${cls}"><div class="cal-num">${d.getDate()}</div></div>`;
+      // Clic sur une case → vue Jour
+      cells += `<div class="cal-day ${cls}" onclick="allerJour('${key}')"><div class="cal-num">${d.getDate()}</div></div>`;
     }
-    const bars = placerBarres(jours).map(it => barreHtml(it, TOP_MOIS)).join("");
+    const bars = placerBarres(jours).map(it => barreHtml(it, TOP_MOIS, mobile)).join("");
     html += `<div class="cal-week">${cells}<div class="cal-bars">${bars}</div></div>`;
   }
   document.getElementById("cal-body").innerHTML = html;
@@ -1556,18 +1766,56 @@ function renderSemaine(ajd) {
     : `${a.getDate()} ${MOIS[a.getMonth()]} – ${b.getDate()} ${MOIS[b.getMonth()]} ${b.getFullYear()}`;
   document.getElementById("cal-titre").textContent = titre;
   document.getElementById("cal-head").innerHTML =
-    jours.map(d => `<div class="cal-th ${dateLocale(d) === ajd ? "ajd" : ""}">${JOURS[(d.getDay()+6)%7]} ${d.getDate()}</div>`).join("");
+    jours.map(d => `<div class="cal-th ${dateLocale(d) === ajd ? "ajd" : ""}" onclick="allerJour('${dateLocale(d)}')" style="cursor:pointer">${JOURS[(d.getDay()+6)%7]} ${d.getDate()}</div>`).join("");
 
   const items = placerBarres(jours);
-  const bars = items.map(it => barreHtml(it, TOP_SEM)).join("");
+  const bars = items.map(it => barreHtml(it, TOP_SEM, false)).join("");
   const hauteur = TOP_SEM + (items.reduce((m, it) => Math.max(m, it.lane), -1) + 1) * LANE + 8;
   let cells = "";
   for (const d of jours)
-    cells += `<div class="cal-day ${dateLocale(d) === ajd ? "ajd" : ""}" style="min-height:${hauteur}px"></div>`;
+    cells += `<div class="cal-day ${dateLocale(d) === ajd ? "ajd" : ""}" style="min-height:${hauteur}px" onclick="allerJour('${dateLocale(d)}')"></div>`;
   document.getElementById("cal-body").innerHTML =
     `<div class="cal-week semaine">${cells}` +
     `<div class="cal-bars" style="inset:auto;top:0;left:0;right:0;height:${hauteur}px">${bars}</div></div>`;
 }
+
+function renderJour(ajd) {
+  const key = dateLocale(calCursor);
+  const d = calCursor;
+  const JOURS_LONG = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+  const isAjd = key === ajd;
+  document.getElementById("cal-titre").textContent =
+    `${JOURS_LONG[d.getDay()]} ${d.getDate()} ${MOIS[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById("cal-head").innerHTML = "";
+
+  const evDuJour = evenements
+    .filter(e => e.debut && jourCle(e.debut) === key)
+    .sort((a, b) => String(a.debut) < String(b.debut) ? -1 : 1);
+
+  if (!evDuJour.length) {
+    document.getElementById("cal-body").innerHTML =
+      `<div class="vide" style="padding:24px;text-align:center">${isAjd ? "Rien de prévu aujourd'hui." : "Rien de prévu ce jour."}</div>`;
+    return;
+  }
+
+  const rows = evDuJour.map(e => {
+    const h = heureDe(e.debut);
+    const hf = heureDe(e.fin);
+    const plage = h ? (hf && hf !== h ? `${h} – ${hf}` : h) : "Toute la journée";
+    const cls = e.type === "sortie" ? "sortie" : (e.statut || "a_venir");
+    return `<div class="jour-event ${cls}" onclick="ouvrirEditEvent(${e._i})">
+      <div class="jour-heure">${plage}</div>
+      <div class="jour-titre">${escapeHtml(e.titre)}</div>
+      <span class="bar-actions">
+        <button onclick="event.stopPropagation();ouvrirEditEvent(${e._i})" title="Modifier">✏️</button>
+        <button onclick="event.stopPropagation();supprimerEvent(${e._i})" title="Supprimer">🗑️</button>
+      </span>
+    </div>`;
+  }).join("");
+
+  document.getElementById("cal-body").innerHTML = `<div class="jour-liste">${rows}</div>`;
+}
+
 
 /* ---------- Édition d'un événement de l'agenda ---------- */
 let editIndex = null;
@@ -1637,6 +1885,8 @@ async function demarrer() {
   const credits = await chargerSolde({ ouvrirPopupSiVide: true });
   if (credits > 0) await proposerSiVide();       // si rien à réviser -> Thoth propose la planification
   if (location.hash === "#agenda") ouvrirVue("agenda");  // deep-link direct vers l'agenda
+  // Init onglets mobiles : mob-sugg par défaut
+  document.body.classList.add("mob-sugg");
 }
 </script>
 </body>
