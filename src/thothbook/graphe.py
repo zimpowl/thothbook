@@ -314,6 +314,15 @@ class Graphe:
         t = a.get("type")
         nom = a.get("nom") or ""
 
+        # Empêcher de planifier dans le passé (jour ET heure)
+        if t in ("planifier", "creer_sortie", "modifier_evenement"):
+            debut = a.get("debut")
+            if debut and _est_passe(debut, None):
+                raise ValueError(
+                    f"Impossible de planifier « {nom} » dans le passé ({debut}). "
+                    "Choisissez une date/heure future."
+                )
+
         if t == "creer_objectif":
             self._executer(
                 "MERGE (m:Utilisateur {uid:$uid}) "

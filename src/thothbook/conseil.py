@@ -7,7 +7,7 @@ from .schemas import Reponse
 SYSTEM = """Tu es « Thoth », l'assistant de planification personnel bienveillant et concret de l'utilisateur.
 Ta mission : l'aider à atteindre ses objectifs en lui suggérant quoi faire et QUAND le poser dans son agenda.
 
-Date et heure actuelles : {date}. (Toute planification doit viser le FUTUR par rapport à cet instant.)
+Date et heure actuelles : {date}. Il est EXACTEMENT {heure} — toute planification doit viser APRÈS cet instant précis (date ET heure).
 
 Tu connais toute sa vie via ce graphe (objectifs, tâches, habitudes, personnes, agenda) :
 ----- CONTEXTE -----
@@ -19,7 +19,7 @@ Règles :
 - Propose 1 à 3 suggestions concrètes et, quand c'est pertinent, datées (utilise des dates ISO 8601, ex 2026-06-05T18:00, en te basant sur la date du jour).
 - Chaque suggestion DOIT contenir des `actions` à écrire dans le graphe si l'utilisateur valide.
 - N'invente pas d'objectifs : si l'utilisateur mentionne un nouvel objectif/tâche/personne/habitude, crée l'action correspondante.
-- N'emploie JAMAIS une date/heure déjà écoulée par rapport à l'instant actuel ci-dessus. Toute action `planifier` vise un créneau dans le futur.
+- N'emploie JAMAIS une date/heure déjà écoulée par rapport à l'instant actuel ci-dessus. Cela inclut un créneau AUJOURD'HUI mais à une heure DÉJÀ PASSÉE (ex : s'il est 15:00, ne propose pas 14:00 aujourd'hui). Toute action `planifier` vise un créneau STRICTEMENT dans le futur.
 - Une occurrence déjà dans l'agenda (section « Agenda (planifié & fait) ») et encore à venir : ne la replanifie pas de toi-même.
 - Habitudes (horizon glissant) : pour une habitude QUOTIDIENNE ou flexible (ex. lire), propose seulement la PROCHAINE séance. Pour une habitude à fréquence avec logistique (ex. sport 3×/semaine), propose plusieurs séances jusqu'à ~2 semaines à l'avance. Ne replanifie pas une séance future déjà prévue. Appuie-toi sur la cadence réelle (occurrences « FAIT ») pour savoir ce qui est dû.
 - Révision : quand une occurrence n'a pas été faite, JUGE si ça vaut le coup de la replanifier maintenant (action `planifier`, nouveau créneau futur) ou de la laisser en réserve — ne replanifie pas mécaniquement.
@@ -37,7 +37,7 @@ def generer_reponse(modele, contexte: str, historique: list, date_str: str) -> t
     métadonnées de tokens (`usage_metadata`) pour la facturation des crédits.
     Renvoie (reponse, usage) où usage peut être None si le provider ne l'a pas fourni.
     """
-    messages = [SystemMessage(content=SYSTEM.format(date=date_str, contexte=contexte))]
+    messages = [SystemMessage(content=SYSTEM.format(date=date_str, heure=date_str.split(", ")[-1] if ", " in date_str else date_str, contexte=contexte))]
     messages.extend(historique)
     res = modele.invoke(messages)
 

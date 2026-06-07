@@ -268,7 +268,10 @@ def ajuster(req: AjusterRequest, uid: str = Depends(uid_courant)) -> Reponse:
 
 @api.post("/valider")
 def valider(suggestion: Suggestion, uid: str = Depends(uid_courant)) -> dict:
-    appliquees = [_get_graphe().appliquer_action(uid, a.model_dump()) for a in suggestion.actions]
+    try:
+        appliquees = [_get_graphe().appliquer_action(uid, a.model_dump()) for a in suggestion.actions]
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     _historiques.setdefault(uid, []).append(HumanMessage(content=f"[J'ai validé : {suggestion.titre}]"))
     return {"ok": True, "appliquees": appliquees, "stats": _get_graphe().stats(uid)}
 
